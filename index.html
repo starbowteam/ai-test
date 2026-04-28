@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Diamond AI · Веб‑помощник</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked-katex-extension@5.0.0/lib/index.umd.js"></script>
+</head>
+<body>
+    <!-- Экран входа -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="https://media.discordapp.net/attachments/1457843805687648522/1487509991274319952/image.png?ex=69c96722&is=69c815a2&hm=848e7f70b25fdfae28b20afd32b117ba1e04bbb20cdb683fa32dfe47e5074626&=&format=webp&quality=lossless&width=836&height=836" alt="Logo">
+                <h1>DIAMOND AI</h1>
+            </div>
+            <div class="login-methods">
+                <button class="login-btn primary" id="loginDefaultBtn">🚀 Запомниться в Diamond</button>
+                <button class="login-btn" id="loginCustomBtn">🔑 Войти по своему ключу</button>
+                <div class="custom-key-group" id="customKeyGroup" style="display: none;">
+                    <input type="password" id="apiKeyInput" placeholder="sk-or-v1-...">
+                    <button id="submitCustomKey">Войти</button>
+                </div>
+                <button class="login-btn" id="loginTryLuckBtn">🎲 Попытать удачу</button>
+            </div>
+            <div class="login-footer">
+                <a href="https://openrouter.ai" target="_blank">Получить ключ на OpenRouter</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной интерфейс -->
+    <div class="app" id="app" style="display: none;">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="burger-btn" id="burgerBtn"><i class="fas fa-bars"></i></button>
+                <img src="https://media.discordapp.net/attachments/1457843805687648522/1487509990758551692/image.png?ex=69c96722&is=69c815a2&hm=3ad3cb18c2ebf16a0ccd31bed4923d3341fae3672907db4934d260d5ba035ed5&=&format=webp&quality=lossless&width=1728&height=404" alt="logo" class="logo-sidebar">
+                <div class="action-icons">
+                    <button id="newChatSidebarBtn" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
+                    <button id="foldersBtn" title="Папки"><i class="fas fa-folder"></i></button>
+                </div>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchHistory" placeholder="Поиск в истории...">
+            </div>
+            <div class="history-list" id="historyList"></div>
+            <div class="user-panel">
+                <div class="user-avatar" id="userAvatar"><i class="fas fa-user"></i></div>
+                <span class="user-name" id="userName">Пользователь</span>
+                <button class="settings-btn" id="settingsBtn"><i class="fas fa-sliders-h"></i></button>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="chat-header">
+                <button class="burger-btn-mobile" id="burgerMobileBtn"><i class="fas fa-bars"></i></button>
+                <div class="chat-title">DIAMOND AI</div>
+                <div class="header-actions">
+                    <button id="newChatMobileBtn"><i class="fas fa-feather-alt"></i></button>
+                </div>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea id="userInput" placeholder="Введите запрос..." rows="1"></textarea>
+                    <button id="sendBtn" disabled><i class="fas fa-arrow-up"></i></button>
+                </div>
+                <div class="input-footer">ИИ-Генерация ⚡</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалки -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Настройки</h2>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-item">
+                    <label>Умный поиск</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="smartSearchToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>Язык</label>
+                    <select id="languageSelect">
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>API-ключ</label>
+                    <input type="password" id="settingsApiKey" placeholder="sk-or-v1-...">
+                    <button id="saveApiKeyBtn">Сохранить ключ</button>
+                </div>
+                <div class="setting-item">
+                    <button id="logoutBtn">Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="foldersModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Папки</h2>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="folders-list" id="foldersList"></div>
+            <button id="createFolderBtn" class="btn-primary">+ Новая папка</button>
+        </div>
+    </div>
+
+    <div id="renameChatModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Переименовать чат</h2>
+                <button class="close-modal">×</button>
+            </div>
+            <input type="text" id="renameChatInput" placeholder="Новое название">
+            <button id="confirmRenameBtn" class="btn-primary">Сохранить</button>
+        </div>
+    </div>
+
+    <div id="folderEditModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="folderEditTitle">Создать папку</h2>
+                <button class="close-modal">×</button>
+            </div>
+            <input type="text" id="folderNameInput" placeholder="Название папки">
+            <textarea id="folderDescInput" placeholder="Описание"></textarea>
+            <div class="color-palette" id="colorPalette">
+                <div class="color-opt" style="background:#e74c3c"></div>
+                <div class="color-opt" style="background:#f39c12"></div>
+                <div class="color-opt" style="background:#2ecc71"></div>
+                <div class="color-opt" style="background:#3498db"></div>
+                <div class="color-opt" style="background:#9b59b6"></div>
+                <div class="color-opt" style="background:#1abc9c"></div>
+            </div>
+            <button id="saveFolderBtn" class="btn-primary">Сохранить</button>
+        </div>
+    </div>
+
+    <div id="moveChatModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Переместить чат</h2>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="folder-select-list" id="folderSelectList"></div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

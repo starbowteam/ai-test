@@ -18,6 +18,7 @@
     --radius-xl: 28px;
     --radius-btn: 40px;
     --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    --collapsed-offset: -15px;   /* ← настройка: двигай панельку влево/вправо */
 }
 
 * {
@@ -83,7 +84,6 @@ body {
     margin-bottom: 12px;
     border-radius: 50%;
     object-fit: cover;
-    /* фильтр убран */
 }
 .logo h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
 .logo p { color: var(--text-secondary); font-size: 14px; }
@@ -171,7 +171,6 @@ body {
     transform: translateX(0);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
-/* При свёрнутом сайдбаре текст прячется */
 .title-bar.collapsed .logo-text {
     opacity: 0;
     transform: translateX(-10px);
@@ -188,10 +187,10 @@ body {
     border: 1px solid var(--border-color);
     padding: 3px 6px;
     transition: all 0.3s ease;
-    transform: scale(0.75);  /* уменьшена на 25% */
+    transform: scale(0.75);
     transform-origin: left center;
     opacity: 0;
-    margin-left: -8px; /* лёгкий сдвиг влево, чтобы точно встать на место текста */
+    margin-left: var(--collapsed-offset);   /* ← регулируемое смещение */
 }
 .collapsed-actions.show {
     display: flex;
@@ -717,7 +716,7 @@ textarea::placeholder { color: #6a6a6a; }
     justify-content: center;
     transition: var(--transition);
 }
-.close-modal:hover { background: var(--danger); color: white; }
+.close-modal:hover { background: var(--bg-hover); color: var(--text-primary); }  /* ← красный убран, теперь стандартный серый */
 .avatar-icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
 .avatar-icon {
     background: var(--bg-tertiary);
@@ -736,8 +735,6 @@ textarea::placeholder { color: #6a6a6a; }
 .avatar-icon.selected { border-color: #fff; background: #2d2d2d; }
 .avatar-icon.selected i { color: white; }
 .avatar-upload { display: flex; gap: 12px; justify-content: center; }
-/* кнопки загрузки/сброса – как .btn-secondary */
-.avatar-upload .btn { }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
 .form-group input, .form-group textarea {

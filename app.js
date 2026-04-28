@@ -66,11 +66,42 @@ function showToast(title, message, type = 'info', duration = 3000) {
     toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
     setTimeout(() => toast.remove(), duration);
 }
-function saveChats() { localStorage.setItem('diamondChats', JSON.stringify(chats)); renderHistory(); }
-function saveFolders() { localStorage.setItem('diamondFolders', JSON.stringify(folders)); }
-function scrollToBottom() {
-    const container = document.getElementById('messages-container');
-    if (container) container.scrollTop = container.scrollHeight;
+
+// ========== МЕТОДЫ ДЛЯ ИЗОЛИРОВАННОГО ХРАНЕНИЯ ==========
+function storageKey(base) {
+    // если юзер не залогинен, используем общий ключ (на всякий случай)
+    return currentUser ? `${base}_${currentUser.login}` : base;
+}
+
+function saveChats() {
+    localStorage.setItem(storageKey('diamondChats'), JSON.stringify(chats));
+    renderHistory();
+}
+function saveFolders() {
+    localStorage.setItem(storageKey('diamondFolders'), JSON.stringify(folders));
+}
+
+function loadChatsForUser() {
+    const stored = localStorage.getItem(storageKey('diamondChats'));
+    if (stored) {
+        chats = JSON.parse(stored);
+        chats.forEach(c => {
+            if (!c.messages) c.messages = [];
+            if (!c.createdAt) c.createdAt = Date.now();
+            c.lastActivity = c.messages.length ? c.messages[c.messages.length - 1].timestamp : c.createdAt;
+        });
+        chats.sort((a, b) => b.lastActivity - a.lastActivity);
+        currentChatId = chats.length ? chats[0].id : null;
+    } else {
+        chats = [];
+        currentChatId = null;
+    }
+    renderHistory();
+}
+
+function loadFoldersForUser() {
+    const stored = localStorage.getItem(storageKey('diamondFolders'));
+    folders = stored ? JSON.parse(stored) : [];
 }
 
 // ========== DIAMKEY / SUPABASE ==========
@@ -133,6 +164,9 @@ async function processDiamkeyReturn() {
         currentUser = user;
         localStorage.setItem('diamond_user', JSON.stringify(user));
         userApiKey = loadUserApiKey(user.login);
+        // загружаем чаты и папки этого пользователя
+        loadChatsForUser();
+        loadFoldersForUser();
         window.history.replaceState({}, document.title, window.location.pathname);
         return true;
     } catch (e) {
@@ -210,7 +244,9 @@ function showRenameModal(chatId) {
 }
 
 // ========== ПАПКИ ==========
-function loadFolders() { const stored = localStorage.getItem('diamondFolders'); if(stored) folders = JSON.parse(stored); else folders = []; }
+function loadFolders() {
+    loadFoldersForUser();
+}
 function createFolder(name, desc, icon, color) {
     folders.push({ id: Date.now().toString(), name: name.trim(), description: desc || '', icon: icon || 'fa-folder', color: color || '#95a5a6', createdAt: Date.now() });
     saveFolders(); renderFoldersPage(); showToast('Папка создана', name, 'success');
@@ -798,21 +834,24 @@ function setupEventListeners() {
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 (async function() {
     log('Загрузка...');
-    loadFolders();
-    const storedChats = localStorage.getItem('diamondChats');
-    if (storedChats) chats = JSON.parse(storedChats);
-    chats.forEach(c => { if (!c.messages) c.messages = []; if (!c.createdAt) c.createdAt = Date.now(); c.lastActivity = c.messages.length ? c.messages[c.messages.length - 1].timestamp : c.createdAt; });
-    chats.sort((a, b) => b.lastActivity - a.lastActivity);
-    if (chats.length) currentChatId = chats[0].id;
+
+    // сначала загружаем данные без привязки к пользователю, пока не узнаем, кто вошёл
+    const savedUser = localStorage.getItem('diamond_user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        userApiKey = loadUserApiKey(currentUser.login);
+        loadChatsForUser();
+        loadFoldersForUser();
+    } else {
+        // если нет сохранённого пользователя, используем пустые массивы
+        chats = [];
+        folders = [];
+    }
 
     await showLoadingScreen();
 
     const ticketProcessed = await processDiamkeyReturn();
-    const savedUser = localStorage.getItem('diamond_user');
-    if (!currentUser && savedUser) {
-        currentUser = JSON.parse(savedUser);
-        userApiKey = loadUserApiKey(currentUser.login);
-    }
+    // если тикет не обработан, а пользователь уже был (из localStorage), то просто продолжаем
     if (currentUser && (ticketProcessed || !window.location.search.includes('ticket'))) {
         afterLogin();
     } else if (!currentUser) {

@@ -69,7 +69,6 @@ function showToast(title, message, type = 'info', duration = 3000) {
 
 // ========== МЕТОДЫ ДЛЯ ИЗОЛИРОВАННОГО ХРАНЕНИЯ ==========
 function storageKey(base) {
-    // если юзер не залогинен, используем общий ключ (на всякий случай)
     return currentUser ? `${base}_${currentUser.login}` : base;
 }
 
@@ -164,7 +163,6 @@ async function processDiamkeyReturn() {
         currentUser = user;
         localStorage.setItem('diamond_user', JSON.stringify(user));
         userApiKey = loadUserApiKey(user.login);
-        // загружаем чаты и папки этого пользователя
         loadChatsForUser();
         loadFoldersForUser();
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -244,9 +242,7 @@ function showRenameModal(chatId) {
 }
 
 // ========== ПАПКИ ==========
-function loadFolders() {
-    loadFoldersForUser();
-}
+function loadFolders() { loadFoldersForUser(); }
 function createFolder(name, desc, icon, color) {
     folders.push({ id: Date.now().toString(), name: name.trim(), description: desc || '', icon: icon || 'fa-folder', color: color || '#95a5a6', createdAt: Date.now() });
     saveFolders(); renderFoldersPage(); showToast('Папка создана', name, 'success');
@@ -292,7 +288,6 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
-    // клик по папке — сразу открываем первый чат в ней и возвращаемся в чат
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
@@ -496,6 +491,9 @@ async function sendMessage() {
 
     addMessageToDOM('user', text, true);
     document.getElementById('user-input').value = '';
+    // Очищаем также поле ввода в пустом состоянии, если оно видимо
+    const emptyInput = document.getElementById('empty-input');
+    if (emptyInput) emptyInput.value = '';
     updateSendButtonState();
     isWaitingForResponse = true;
     updateSendButtonState();
@@ -646,7 +644,7 @@ function toggleSidebar() {
             collapsedActions.classList.toggle('show', sidebarCollapsed);
             if (sidebarCollapsed) {
                 collapsedActions.style.animation = 'none';
-                collapsedActions.offsetHeight; // рефлоу
+                collapsedActions.offsetHeight;
                 collapsedActions.style.animation = 'slideIn 0.3s ease forwards';
             }
         }
@@ -741,6 +739,9 @@ function renderEmptyState() {
 function sendMessageFromEmpty(text) {
     document.getElementById('user-input').value = text;
     sendMessage();
+    // Очищаем поле ввода пустого состояния
+    const emptyInput = document.getElementById('empty-input');
+    if (emptyInput) emptyInput.value = '';
 }
 
 // ========== ЗАГРУЗОЧНЫЙ ЭКРАН (простой спиннер 2.5 сек) ==========
@@ -835,7 +836,6 @@ function setupEventListeners() {
 (async function() {
     log('Загрузка...');
 
-    // сначала загружаем данные без привязки к пользователю, пока не узнаем, кто вошёл
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -843,7 +843,6 @@ function setupEventListeners() {
         loadChatsForUser();
         loadFoldersForUser();
     } else {
-        // если нет сохранённого пользователя, используем пустые массивы
         chats = [];
         folders = [];
     }
@@ -851,7 +850,6 @@ function setupEventListeners() {
     await showLoadingScreen();
 
     const ticketProcessed = await processDiamkeyReturn();
-    // если тикет не обработан, а пользователь уже был (из localStorage), то просто продолжаем
     if (currentUser && (ticketProcessed || !window.location.search.includes('ticket'))) {
         afterLogin();
     } else if (!currentUser) {

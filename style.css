@@ -277,7 +277,7 @@ body {
 }
 .api-input-section {
     margin-top: 20px;
-    display: none;
+    display: block; /* всегда показываем */
     animation: slideDown 0.3s ease;
 }
 .api-input-section.visible {
@@ -1057,32 +1057,29 @@ textarea::placeholder {
     background: #3a3a3a;
     color: #aaa;
 }
-/* Кнопка умного поиска */
-.search-mode-btn {
+/* Кнопка Стоп */
+.stop-btn {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #1a1a1a;
+    background: var(--danger);
     border: none;
-    color: #b0b0b0;
+    color: white;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition);
-    font-size: 18px;
-    padding: 0;
-    line-height: 1;
+    font-size: 16px;
+    margin-right: 4px;
 }
-.search-mode-btn:hover {
-    background: #2a2a2a;
-    color: #f0f0f0;
+.stop-btn:hover {
+    background: var(--danger-hover);
     transform: scale(1.05);
 }
-.search-mode-btn.active {
-    background: #2a6e3a;
-    color: white;
-    box-shadow: 0 0 0 2px rgba(42,110,58,0.3);
+.stop-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 .input-footer {
     text-align: center;
@@ -1465,7 +1462,6 @@ textarea::placeholder {
 .folder-chat-item:hover {
     background: var(--bg-hover);
 }
-/* Стили для модалки выбора папки (при перемещении чата) */
 .folder-modal-temp .folder-option {
     display: flex;
     align-items: center;

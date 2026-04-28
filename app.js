@@ -156,7 +156,7 @@ function logout() {
 
 // ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
-    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку
+    const url = 'bot-av.ico'; // ← новая ссылка
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {

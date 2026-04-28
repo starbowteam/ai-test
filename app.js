@@ -1,5 +1,4 @@
 // ==================== WEB VERSION — DIAMOND AI ====================
-// Supabase (данные Diamkey)
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 
@@ -7,7 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let currentChatId = null;
 let chats = [];
 let folders = [];
-let currentUser = null;               // { login, email, secret_word, name, avatar, ... }
+let currentUser = null;               // { login, email, secretWord, name, avatar, fa_icon, ... }
 let userApiKey = '';                  // OpenRouter API-ключ
 let isWaitingForResponse = false;
 let currentAbortController = null;
@@ -31,11 +30,13 @@ const placeholderTexts = [
     "Придумай идею для стартапа",
     "Сколько звёзд во Вселенной?"
 ];
+
 const PRIORITY_MODELS = [
     'openai/gpt-3.5-turbo',
     'anthropic/claude-3-haiku',
     'google/gemini-flash-1.5'
 ];
+
 const now = new Date();
 const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 const SYSTEM_PROMPT = {
@@ -77,18 +78,19 @@ function scrollToBottom() {
 
 // ========== DIAMKEY / SUPABASE ==========
 async function exchangeTicket(ticket) {
-    const url = `${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`;
     const headers = {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
     };
     try {
-        let resp = await fetch(url, { headers });
+        // 1. Найти неиспользованный тикет
+        let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
         if (!resp.ok) throw new Error('Ошибка поиска тикета');
         const tickets = await resp.json();
         if (!tickets.length) throw new Error('Тикет не найден или уже использован');
         const ticketData = tickets[0];
 
+        // 2. Пометить тикет использованным
         resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
             method: 'PATCH',
             headers: { ...headers, 'Content-Type': 'application/json' },
@@ -96,16 +98,40 @@ async function exchangeTicket(ticket) {
         });
         if (!resp.ok) throw new Error('Не удалось обновить тикет');
 
-        resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${ticketData.login}`, { headers });
-        if (!resp.ok) throw new Error('Ошибка получения пользователя');
-        const users = await resp.json();
-        if (!users.length) throw new Error('Пользователь не найден');
-        return users[0];
+        // 3. Найти пользователя. Если email не найден, пробуем по логину (email до @)
+        let user = null;
+        if (ticketData.email) {
+            resp = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${ticketData.email}`, { headers });
+            if (resp.ok) {
+                const users = await resp.json();
+                if (users.length) user = users[0];
+            }
+            if (!user) {
+                const login = ticketData.email.split('@')[0];
+                resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
+                if (resp.ok) {
+                    const users = await resp.json();
+                    if (users.length) user = users[0];
+                }
+            }
+        }
+        if (!user) throw new Error('Пользователь не найден');
+
+        return {
+            login: user.login,
+            email: user.email || ticketData.email,
+            secretWord: user.secret_word,
+            name: user.name || '',
+            avatar: user.avatar || '',
+            description: user.description || '',
+            fa_icon: user.fa_icon || ''
+        };
     } catch (e) {
         console.error('Ошибка обмена тикета:', e);
         throw e;
     }
 }
+
 function loadUserApiKey(login) {
     return localStorage.getItem(`openrouter_key_${login}`) || '';
 }
@@ -113,6 +139,7 @@ function saveUserApiKey(login, key) {
     localStorage.setItem(`openrouter_key_${login}`, key);
     userApiKey = key;
 }
+
 async function processDiamkeyReturn() {
     const urlParams = new URLSearchParams(window.location.search);
     const ticket = urlParams.get('ticket');
@@ -129,6 +156,7 @@ async function processDiamkeyReturn() {
         return false;
     }
 }
+
 function logout() {
     currentUser = null;
     userApiKey = '';
@@ -140,32 +168,31 @@ function logout() {
 
 // ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
-    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку при необходимости
+    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {
-    if (userAvatarUrl) return `<img src="${userAvatarUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-    if (userAvatar.type === 'icon') return `<i class="fas ${userAvatar.value}"></i>`;
-    if (userAvatar.type === 'custom' && userAvatar.dataUrl) return `<img src="${userAvatar.dataUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    if (currentUser && currentUser.avatar) return `<img src="${currentUser.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    if (currentUser && currentUser.fa_icon) return `<i class="${currentUser.fa_icon}"></i>`;
     return '<i class="fas fa-user"></i>';
 }
+
 function updateUserPanel() {
     const nameSpan = document.getElementById('userNameDisplay');
-    if (nameSpan) {
-        if (currentUser) {
-            nameSpan.textContent = currentUser.name || currentUser.login;
-        } else {
-            nameSpan.textContent = userName;
-        }
-    }
     const avatarImg = document.getElementById('userAvatarImg');
-    if (avatarImg) {
-        avatarImg.src = (currentUser && currentUser.avatar) ? currentUser.avatar : '';
+    if (currentUser) {
+        if (nameSpan) {
+            const icon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="margin-right:6px;"></i>` : '';
+            nameSpan.innerHTML = `${icon}${currentUser.name || currentUser.login}`;
+        }
+        if (avatarImg) {
+            avatarImg.src = currentUser.avatar || '';
+        }
+    } else {
+        if (nameSpan) nameSpan.textContent = 'Пользователь';
+        if (avatarImg) avatarImg.src = '';
     }
 }
-function setUserName(name) { userName = name; localStorage.setItem('userName', name); updateUserPanel(); showToast('Имя сохранено', name, 'success'); }
-function setUserAvatarUrl(url) { userAvatarUrl = url; localStorage.setItem('userAvatarUrl', url); updateUserPanel(); renderChat(); showToast('Аватар обновлён', '', 'success'); }
-function saveAvatar(avatarData) { localStorage.setItem('userAvatar', JSON.stringify(avatarData)); userAvatar = avatarData; renderChat(); updateUserPanel(); }
 
 // ========== ЧАТЫ ==========
 function generateChatTitle(msg) { return msg.length > 50 ? msg.slice(0,47)+'...' : msg; }

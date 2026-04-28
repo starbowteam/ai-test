@@ -466,7 +466,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .avatar {
-  width: 40px; height: 40px;
+  width: 42px; height: 42px;
   border-radius: 50%;
   background: var(--bg-tertiary);
   display: flex;
@@ -481,10 +481,10 @@ body {
 .message-content-wrapper { display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .message-content {
   background: var(--bg-tertiary);
-  padding: 16px 22px;
+  padding: 16px 20px;
   border-radius: var(--radius-lg);
   line-height: 1.5;
-  font-size: 20px;
+  font-size: 18px;
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   word-break: break-word;

@@ -15,16 +15,11 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
 </head>
 <body>
-    <!-- Загрузочный экран -->
+    <!-- Загрузочный экран (простой спиннер) -->
     <div class="welcome-screen" id="welcomeScreen">
-        <div class="welcome-content">
-            <div class="welcome-title">DIAMOND AI</div>
-            <div class="loading-status" id="loadingStatus">Загрузка нейронных связей</div>
-            <div class="loading-bar-container">
-                <div class="loading-bar" id="loadingBar"></div>
-            </div>
+        <div class="spinner-container">
+            <i class="fas fa-circle-notch fa-spin" style="font-size: 3rem; color: #fff;"></i>
         </div>
-        <img src="assets/loading-character.png" class="loading-character" id="loadingCharacter" alt="character">
     </div>
 
     <!-- Экран входа Diamkey -->
@@ -39,7 +34,7 @@
                 <i class="fas fa-gem"></i> Войти по Diamkey
             </button>
             <p class="footer-note">
-                Нет аккаунта? <a href="https://diamkey.ru/register" target="_blank">Создать Diamkey</a>
+                Нет аккаунта? <a href="https://diamkey.ru" target="_blank">Создать Diamkey</a>
             </p>
         </div>
     </div>

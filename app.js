@@ -13,9 +13,8 @@ let currentAbortController = null;
 let currentStreamingMessageId = null;
 let lastNotificationTime = 0;
 const NOTIFICATION_DEBOUNCE = 1000;
-let userAvatar = { type: 'icon', value: 'fa-user' };
-let userAvatarUrl = localStorage.getItem('userAvatarUrl') || '';
-let userName = localStorage.getItem('userName') || 'Пользователь';
+// Локальные аватар и имя больше не используются, все данные из DiamKey
+let userName = '';                    // будет заполнено из currentUser
 let sidebarCollapsed = false;
 let currentEditingFolderId = null;
 let currentView = 'chat';
@@ -150,13 +149,13 @@ function logout() {
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
-    setupDiamkeyButton(); // переустанавливаем обработчик кнопки
+    setupDiamkeyButton(); // восстанавливаем кнопку входа
     showToast('Вы вышли', '', 'info');
 }
 
-// ========== АВАТАРЫ ==========
+// ========== АВАТАРЫ (только из DiamKey) ==========
 function getBotAvatarHTML() {
-    const url = 'bot-av.ico'; // ← новая ссылка
+    const url = 'bot-av.ico';
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {
@@ -172,6 +171,7 @@ function updateUserPanel() {
         if (nameSpan) {
             const icon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="margin-right:6px;"></i>` : '';
             nameSpan.innerHTML = `${icon}${currentUser.name || currentUser.login}`;
+            userName = currentUser.name || currentUser.login;
         }
         if (avatarImg) {
             avatarImg.src = currentUser.avatar || '';
@@ -179,6 +179,7 @@ function updateUserPanel() {
     } else {
         if (nameSpan) nameSpan.textContent = 'Пользователь';
         if (avatarImg) avatarImg.src = '';
+        userName = 'Пользователь';
     }
 }
 
@@ -205,7 +206,7 @@ function showRenameModal(chatId) {
     if (!chat) return;
     const modal = document.createElement('div'); modal.className = 'rename-modal'; modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2600;';
     const content = document.createElement('div'); content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border-color);';
-    content.innerHTML = `<h3 style="margin-bottom:16px;">Переименовать чат</h3><input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white; margin-bottom:20px;"><div style="display:flex; gap:12px;"><button id="rename-confirm" class="btn-primary">Сохранить</button><button id="rename-cancel" class="btn-secondary">Отмена</button></div>`;
+    content.innerHTML = `<h3 style="margin-bottom:16px;">Переименовать чат</h3><input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white; margin-bottom:20px;"><div style="display:flex; gap:12px;"><button id="rename-confirm" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button><button id="rename-cancel" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button></div>`;
     modal.appendChild(content); document.body.appendChild(modal);
     const input = content.querySelector('#rename-input'); input.focus();
     const close = () => modal.remove();
@@ -308,8 +309,8 @@ function showFolderSelectModal(chatId) {
     content.innerHTML = `
         <h3 style="margin-bottom:16px;">Выбрать папку</h3>
         <div style="max-height:300px; overflow-y:auto;" id="folder-options-list"></div>
-        <button id="create-folder-from-select" style="margin-top:12px;" class="btn-secondary">+ Новая папка</button>
-        <button id="close-folder-select" class="btn-secondary">Отмена</button>
+        <button id="create-folder-from-select" style="margin-top:12px;" class="btn-secondary"><i class="fas fa-plus"></i> Новая папка</button>
+        <button id="close-folder-select" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button>
     `;
     modal.appendChild(content); document.body.appendChild(modal);
 
@@ -611,11 +612,28 @@ function toggleSidebar() {
         sidebarCollapsed = !sidebarCollapsed;
         sidebar.classList.toggle('collapsed', sidebarCollapsed);
     }
+    updateLogoAndActions();
+}
+function updateLogoAndActions() {
+    const titleBar = document.querySelector('.title-bar');
+    const collapsedActions = document.getElementById('collapsedActions');
+    if (sidebarCollapsed) {
+        titleBar?.classList.add('collapsed');
+        collapsedActions?.classList.add('show');
+    } else {
+        titleBar?.classList.remove('collapsed');
+        collapsedActions?.classList.remove('show');
+    }
 }
 window.addEventListener('resize', () => {
     const sidebar = document.getElementById('sidebar');
-    if (window.innerWidth > 768) sidebar.classList.remove('open');
-    else sidebar.classList.remove('collapsed');
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+        updateLogoAndActions();
+    } else {
+        sidebar.classList.remove('collapsed');
+        updateLogoAndActions();
+    }
 });
 
 function setupFoldersUI() {
@@ -709,13 +727,15 @@ function setupEventListeners() {
     };
 
     document.getElementById('sidebarToggleBtn')?.addEventListener('click', toggleSidebar);
-    document.getElementById('expandSidebarBtn')?.addEventListener('click', () => { if (sidebarCollapsed) toggleSidebar(); });
+    // Компактные кнопки
+    document.getElementById('collapsedNewChat')?.addEventListener('click', createNewChat);
+    document.getElementById('collapsedFolders')?.addEventListener('click', switchToFoldersView);
+    document.getElementById('collapsedGenhab')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
+
     document.getElementById('new-chat-btn')?.addEventListener('click', createNewChat);
-    document.getElementById('newChatCollapsedBtn')?.addEventListener('click', createNewChat);
     document.getElementById('folders-page-btn')?.addEventListener('click', switchToFoldersView);
-    document.getElementById('foldersCollapsedBtn')?.addEventListener('click', switchToFoldersView);
     document.getElementById('genhab-page-btn')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
-    document.getElementById('genhabCollapsedBtn')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
+
     document.getElementById('back-to-chat-from-folders')?.addEventListener('click', switchToChatView);
     document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
         currentEditingFolderId = null;
@@ -761,63 +781,14 @@ function setupEventListeners() {
     document.getElementById('close-terms-btn')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'none');
     document.getElementById('close-privacy-btn')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'none');
 
-    document.getElementById('userNameDisplay')?.addEventListener('click', () => {
-        document.getElementById('rename-user-input').value = userName;
-        document.getElementById('rename-user-modal').style.display = 'flex';
-    });
-    document.getElementById('close-rename-user-modal')?.addEventListener('click', () => document.getElementById('rename-user-modal').style.display = 'none');
-    document.getElementById('rename-user-confirm')?.addEventListener('click', () => {
-        const newName = document.getElementById('rename-user-input').value.trim();
-        if (newName) setUserName(newName);
-        document.getElementById('rename-user-modal').style.display = 'none';
-    });
-    document.getElementById('rename-user-cancel')?.addEventListener('click', () => document.getElementById('rename-user-modal').style.display = 'none');
-
+    // Убираем обработчики на изменение имени/аватара, так как они теперь из DiamKey
+    // Оставляем только меню пользователя
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('userDropdown').classList.toggle('show');
     });
     document.addEventListener('click', (e) => {
         if (!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show');
-    });
-
-    const avatarContainer = document.querySelector('.user-avatar');
-    if (avatarContainer) {
-        avatarContainer.onclick = () => {
-            document.getElementById('avatar-modal').style.display = 'flex';
-            document.querySelectorAll('.avatar-icon').forEach(icon => {
-                if (userAvatar.type === 'icon' && userAvatar.value === icon.dataset.icon) icon.classList.add('selected');
-                else icon.classList.remove('selected');
-            });
-        };
-    }
-    document.getElementById('close-avatar-modal')?.addEventListener('click', () => document.getElementById('avatar-modal').style.display = 'none');
-    document.querySelectorAll('.avatar-icon').forEach(icon => icon.onclick = () => {
-        saveAvatar({ type: 'icon', value: icon.dataset.icon });
-        setUserAvatarUrl('');
-        document.getElementById('avatar-modal').style.display = 'none';
-    });
-    document.getElementById('upload-avatar-btn')?.addEventListener('click', () => {
-        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-        inp.onchange = e => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    const dataUrl = ev.target.result;
-                    saveAvatar({ type: 'custom', dataUrl, fileName: file.name });
-                    setUserAvatarUrl(dataUrl);
-                    document.getElementById('avatar-modal').style.display = 'none';
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-        inp.click();
-    });
-    document.getElementById('reset-avatar-btn')?.addEventListener('click', () => {
-        saveAvatar({ type: 'icon', value: 'fa-user' });
-        setUserAvatarUrl('');
-        document.getElementById('avatar-modal').style.display = 'none';
     });
 
     document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
@@ -837,12 +808,6 @@ function setupEventListeners() {
     chats.sort((a, b) => b.lastActivity - a.lastActivity);
     if (chats.length) currentChatId = chats[0].id;
 
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (savedAvatar) userAvatar = JSON.parse(savedAvatar);
-    userAvatarUrl = localStorage.getItem('userAvatarUrl') || '';
-    userName = localStorage.getItem('userName') || 'Пользователь';
-
-    // Показываем простой спиннер
     await showLoadingScreen();
 
     const ticketProcessed = await processDiamkeyReturn();
@@ -863,6 +828,7 @@ function setupEventListeners() {
     updateUserPanel();
     updateSendButtonState();
     if (chats.length) renderHistory();
+    updateLogoAndActions(); // начальное состояние лого/кнопок
     log('Готово');
 })();
 

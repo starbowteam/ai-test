@@ -7,6 +7,8 @@
     <link rel="icon" type="image/x-icon" href="fulco.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Шрифт Inter (как на Diamkey) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -30,7 +32,7 @@
                 <h1>DIAMOND AI</h1>
                 <p>Войдите через Diamkey, чтобы продолжить</p>
             </div>
-            <button class="btn btn-primary btn-large" id="diamkeyLoginBtn">
+            <button class="btn btn-diamkey" id="diamkeyLoginBtn">
                 <i class="fas fa-gem"></i> Войти по Diamkey
             </button>
             <p class="footer-note">
@@ -46,14 +48,15 @@
                 <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Показать/скрыть панель">
                     <i class="fas fa-bars"></i>
                 </button>
-                <div class="logo-icon" id="logoIcon">
-                    <img src="fulco.ico" alt="logo" id="logoImage">
+                <div class="logo-area" id="logoArea">
+                    <img src="fulco.ico" alt="logo" class="logo-icon-img">
+                    <span class="logo-text">DIAMOND AI</span>
                 </div>
-                <div class="action-buttons-group" id="actionButtonsGroup" style="display: none;">
-                    <button class="action-btn-group" id="expandSidebarBtn" title="Развернуть боковую панель"><i class="fas fa-bars"></i></button>
-                    <button class="action-btn-group" id="newChatCollapsedBtn" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
-                    <button class="action-btn-group" id="foldersCollapsedBtn" title="Папки"><i class="fas fa-folder"></i></button>
-                    <button class="action-btn-group" id="genhabCollapsedBtn" title="ГенХаб"><i class="fas fa-magic"></i></button>
+                <!-- Компактные кнопки при свёрнутом сайдбаре (по умолчанию скрыты) -->
+                <div class="collapsed-actions" id="collapsedActions">
+                    <button class="action-btn-icon" id="collapsedNewChat" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
+                    <button class="action-btn-icon" id="collapsedFolders" title="Папки"><i class="fas fa-folder"></i></button>
+                    <button class="action-btn-icon" id="collapsedGenhab" title="ГенХаб"><i class="fas fa-magic"></i></button>
                 </div>
             </div>
             <div class="window-controls" style="-webkit-app-region: no-drag;"></div>
@@ -62,7 +65,7 @@
         <div class="app-container">
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
-                    <div class="action-buttons-frame" id="actionButtonsFrame">
+                    <div class="action-buttons-frame">
                         <button id="new-chat-btn" class="frame-btn" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
                         <button id="folders-page-btn" class="frame-btn" title="Папки"><i class="fas fa-folder"></i></button>
                         <button id="genhab-page-btn" class="frame-btn" title="ГенХаб"><i class="fas fa-magic"></i></button>
@@ -113,8 +116,8 @@
                     </div>
                     <div class="folders-list-container" id="foldersListContainer"></div>
                     <div class="folders-page-footer">
-                        <button id="create-folder-page-btn" class="btn-primary btn-glow"><i class="fas fa-plus"></i> Создать папку</button>
-                        <button id="back-to-chat-from-folders" class="btn-secondary btn-glow"><i class="fas fa-arrow-left"></i> Назад к чату</button>
+                        <button id="create-folder-page-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Создать папку</button>
+                        <button id="back-to-chat-from-folders" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Назад к чату</button>
                     </div>
                 </div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
@@ -127,7 +130,7 @@
         </div>
     </div>
 
-    <!-- Модалка аватара -->
+    <!-- Модалка аватара (оставлена для возможных будущих нужд, но сейчас не активируется) -->
     <div id="avatar-modal" class="avatar-modal" style="display: none;">
         <div class="avatar-modal-content">
             <div class="avatar-modal-header">
@@ -149,7 +152,7 @@
         </div>
     </div>
 
-    <!-- Модалка переименования пользователя -->
+    <!-- Модалка переименования пользователя (больше не нужна, но оставлена) -->
     <div id="rename-user-modal" class="rename-modal" style="display: none;">
         <div class="rename-modal-content">
             <div class="rename-modal-header">

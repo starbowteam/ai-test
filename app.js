@@ -406,7 +406,7 @@ function setupChoiceScreen() {
     const apiInput = document.getElementById('apiKeyInput');
     const apiSection = document.getElementById('apiInputSection');
     if(!optionBuiltIn || !optionOwnKey) return;
-    optionBuiltIn.onclick = () => { handleLogin('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'); };
+    optionBuiltIn.onclick = () => { handleLogin('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'); };
     optionOwnKey.onclick = () => { document.querySelector('.options').style.display = 'none'; apiSection.classList.add('visible'); };
     backBtn.onclick = () => { document.querySelector('.options').style.display = 'flex'; apiSection.classList.remove('visible'); apiInput.value = ''; };
     submitBtn.onclick = async () => { const key = apiInput.value.trim(); if(!key) { showToast('Ошибка', 'Введите ключ', 'warning'); return; } const valid = await checkKeyBalance(key); if(valid) handleLogin(key); else showToast('Неверный ключ', 'Проверьте ключ', 'error'); };

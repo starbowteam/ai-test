@@ -739,12 +739,11 @@ function renderEmptyState() {
 function sendMessageFromEmpty(text) {
     document.getElementById('user-input').value = text;
     sendMessage();
-    // Очищаем поле ввода пустого состояния
     const emptyInput = document.getElementById('empty-input');
     if (emptyInput) emptyInput.value = '';
 }
 
-// ========== ЗАГРУЗОЧНЫЙ ЭКРАН (простой спиннер 2.5 сек) ==========
+// ========== ЗАГРУЗОЧНЫЙ ЭКРАН ==========
 async function showLoadingScreen() {
     const ws = document.getElementById('welcomeScreen');
     ws.style.display = 'flex';

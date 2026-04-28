@@ -38,7 +38,7 @@ body {
 ::-webkit-scrollbar { width: 0; background: transparent; }
 * { scrollbar-width: none; -ms-overflow-style: none; }
 
-/* ========== ЗАГРУЗОЧНЫЙ ЭКРАН (простой спиннер) ========== */
+/* ========== ЗАГРУЗОЧНЫЙ ЭКРАН ========== */
 .welcome-screen {
     position: fixed;
     top: 0; left: 0;
@@ -83,17 +83,17 @@ body {
     margin-bottom: 12px;
     border-radius: 50%;
     object-fit: cover;
-    filter: grayscale(1);
+    /* фильтр убран, лого цветной */
 }
 .logo h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
 .logo p { color: var(--text-secondary); font-size: 14px; }
 
-/* Новая яркая кнопка входа */
+/* Кнопка входа (яркая, без чб) */
 .btn-diamkey {
     padding: 16px 20px;
     font-size: 16px;
     border-radius: var(--radius-xl);
-    background: linear-gradient(135deg, #4a4a5a, #2a2a33);
+    background: linear-gradient(135deg, #5a5a6e, #3a3a44);
     border: 1px solid rgba(255,255,255,0.2);
     width: 100%;
     margin-top: 12px;
@@ -101,11 +101,15 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 .btn-diamkey:hover {
-    background: linear-gradient(135deg, #5a5a6a, #3a3a44);
+    background: linear-gradient(135deg, #6a6a7e, #4a4a54);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(255,255,255,0.1);
+    box-shadow: 0 8px 20px rgba(255,255,255,0.15);
 }
 .footer-note { margin-top: 20px; font-size: 13px; color: #5a5a5a; }
 .footer-note a { color: var(--text-secondary); text-decoration: none; }
@@ -120,6 +124,7 @@ body {
     transition: opacity 0.5s ease;
 }
 .main-ui.visible { opacity: 1; }
+
 .title-bar {
     height: 48px;
     background: var(--bg-secondary);
@@ -133,6 +138,7 @@ body {
     flex-shrink: 0;
 }
 .title-bar-left { display: flex; align-items: center; gap: 12px; -webkit-app-region: no-drag; }
+
 .sidebar-toggle-btn {
     width: 32px; height: 32px;
     background: transparent;
@@ -153,6 +159,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: all 0.3s ease;
 }
 .logo-icon-img { height: 28px; width: auto; display: block; }
 .logo-text {
@@ -160,27 +167,37 @@ body {
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: 0.5px;
-    transition: opacity 0.3s;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
-
-/* Скрываем текст, когда сайдбар свёрнут */
-.sidebar.collapsed ~ .chat-area .title-bar .logo-text { display: none; } /* не совсем корректно, поправим через JS */
-/* Вместо этого будем управлять через класс на title-bar */
-.title-bar.collapsed .logo-text { display: none; }
+/* При свёрнутом сайдбаре текст плавно уезжает и исчезает (будет управляться через JS классом на title-bar) */
+.title-bar.collapsed .logo-text {
+    opacity: 0;
+    transform: translateX(-10px);
+    pointer-events: none;
+}
 
 /* Компактные кнопки при свёрнутом сайдбаре */
 .collapsed-actions {
     display: none;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border-color);
-    padding: 2px 6px;
+    padding: 3px 8px;
+    transition: var(--transition);
+    /* УМЕНЬШЕНИЕ ПАНЕЛЬКИ НА 8% – уменьшены внутренние отступы и зазор */
+    transform: scale(0.92);          /* <-- уменьшено на 8% */
+    transform-origin: left center;
 }
-.collapsed-actions.show { display: flex; }
+.collapsed-actions.show {
+    display: flex;
+}
 
 .action-btn-icon {
-    width: 36px; height: 36px;
+    width: 34px; height: 34px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
@@ -333,19 +350,19 @@ body {
 .chat-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .chat-action-btn:not(:last-child) { border-right: 1px solid var(--border-color); }
 
-/* Панель пользователя (убрано редактирование аватара/имени) */
+/* Панель пользователя (увеличенная) */
 .user-panel {
     margin-top: auto;
-    padding: 12px 16px;
+    padding: 14px 16px;          /* было 12px, стало чуть больше */
     border-top: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     position: relative;
     background: var(--bg-secondary);
 }
 .user-avatar {
-    width: 40px; height: 40px;
+    width: 46px; height: 46px;     /* увеличена */
     border-radius: 50%;
     background: var(--bg-tertiary);
     display: flex;
@@ -353,30 +370,25 @@ body {
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
-    cursor: default; /* больше не кликабельна */
+    cursor: default;
 }
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.user-avatar .avatar-icon-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-/* убрали редактирование */
-.user-avatar:hover img, .user-avatar:hover .avatar-icon-fallback { filter: none; }
-.user-avatar::after { display: none; }
-
+.user-avatar .avatar-icon-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
 .user-info { flex: 1; }
 .user-name {
-    font-size: 14px;
+    font-size: 15px;              /* крупнее */
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: default;
 }
-.user-name:hover { text-decoration: none; } /* убрали подчеркивание */
 .user-menu-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    width: 32px; height: 32px;
+    width: 36px; height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -466,7 +478,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 .avatar {
-    width: 45px; height: 45px;        /* увеличенный размер */
+    width: 45px; height: 45px;
     border-radius: 50%;
     background: var(--bg-tertiary);
     display: flex;
@@ -478,14 +490,14 @@ body {
 }
 .message.user .avatar { background: #2d2d2d; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
-.avatar i { font-size: 22px; color: var(--text-primary); } /* под размер аватара */
+.avatar i { font-size: 22px; color: var(--text-primary); }
 .message-content-wrapper { display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .message-content {
     background: var(--bg-tertiary);
-    padding: 16px 20px;               /* увеличенные отступы */
+    padding: 16px 20px;
     border-radius: var(--radius-lg);
     line-height: 1.5;
-    font-size: 18px;                  /* увеличенный шрифт */
+    font-size: 18px;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     word-break: break-word;
@@ -574,16 +586,8 @@ textarea::placeholder { color: #6a6a6a; }
     transition: var(--transition);
     font-size: 18px;
 }
-.send-btn:not(:disabled):hover {
-    background: #2a2a2a;
-    transform: scale(1.05);
-}
-.send-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #3a3a3a;
-    color: #aaa;
-}
+.send-btn:not(:disabled):hover { background: #2a2a2a; transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #3a3a3a; color: #aaa; }
 .stop-btn {
     width: 36px; height: 36px;
     border-radius: 50%;
@@ -600,13 +604,7 @@ textarea::placeholder { color: #6a6a6a; }
 }
 .stop-btn:hover { background: var(--danger-hover); transform: scale(1.05); }
 .stop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.input-footer {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 12px;
-    opacity: 0.7;
-}
+.input-footer { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 12px; opacity: 0.7; }
 
 /* ========== ПАПКИ ========== */
 .folders-page { padding: 24px 32px; overflow-y: auto; }

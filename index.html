@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>DIAMOND AI — веб‑помощник</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>DIAMOND AI · Веб‑помощник</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked-katex-extension@5.0.0/lib/index.umd.js"></script>
 </head>
 <body>
-    <!-- Экран загрузки -->
+    <!-- Загрузочный экран -->
     <div class="welcome-screen" id="welcomeScreen">
         <div class="welcome-content">
             <div class="welcome-title">DIAMOND AI</div>
@@ -22,13 +22,14 @@
                 <div class="loading-bar" id="loadingBar"></div>
             </div>
         </div>
+        <img src="https://cdn.discordapp.com/attachments/1223595469746475049/1486732262929338378/IMG_8307.PNG?ex=69c692d1&is=69c54151&hm=7db5f0ac235605888c45452d53c38e8db57d2b4fda5a6f36e6dfe9ed50c85883&" class="loading-character" id="loadingCharacter" alt="character">
     </div>
 
     <!-- Экран выбора входа -->
     <div class="choice-screen" id="choiceScreen" style="display: none;">
         <div class="choice-container">
             <div class="logo">
-                <img src="https://media.discordapp.net/attachments/1457843805687648522/1487509991274319952/image.png?ex=69c96722&is=69c815a2&hm=848e7f70b25fdfae28b20afd32b117ba1e04bbb20cdb683fa32dfe47e5074626&=&format=webp&quality=lossless&width=836&height=836" class="logo-img" alt="DIAMOND AI Logo">
+                <img src="https://media.discordapp.net/attachments/1223595469746475049/1486731541206798480/image_2026-03-26_17-18-341.png?ex=69c69225&is=69c540a5&hm=8e6b4f1dd2f6fdb00fe6957dbe357634eb2e1c514787d2f0e9fb392ed893785b&=&format=webp&quality=lossless&width=1858&height=434" alt="DIAMOND AI Logo" class="logo-img">
                 <h1>DIAMOND AI</h1>
                 <p>Выберите вход</p>
             </div>
@@ -50,14 +51,6 @@
                     </div>
                     <i class="fas fa-chevron-right"></i>
                 </div>
-                <div class="option-card" id="optionTryLuck">
-                    <div class="option-icon"><i class="fas fa-dice-d6"></i></div>
-                    <div class="option-content">
-                        <div class="option-title">Попытать удачу</div>
-                        <div class="option-desc">Подобрать ключ автоматически</div>
-                    </div>
-                    <i class="fas fa-chevron-right"></i>
-                </div>
             </div>
             <div class="api-input-section" id="apiInputSection">
                 <div class="input-group">
@@ -73,40 +66,46 @@
             <div class="footer-note">
                 <a href="https://openrouter.ai" target="_blank"><i class="fas fa-external-link-alt"></i> Получить ключ</a>
             </div>
-            <div class="choice-character">
-                <img src="https://media.discordapp.net/attachments/1457843805687648522/1487524838246584542/9553A22F-70B0-4F0D-A690-9223B55BB094-Photoroom.png?ex=69c974f6&is=69c82376&hm=09858755f1ffacdd7f97e93150347b0f505267187f418506064f3b6481cbc5c1&=&format=webp&quality=lossless&width=644&height=966" alt="character">
-            </div>
         </div>
     </div>
 
-    <!-- Основной интерфейс -->
+    <!-- Основной интерфейс чата -->
     <div class="main-ui" id="mainUI" style="display: none;">
         <header class="title-bar">
             <div class="title-bar-left">
-                <button class="sidebar-toggle-btn" id="sidebarToggleBtn"><i class="fas fa-bars"></i></button>
-                <div class="logo-icon"><img src="https://media.discordapp.net/attachments/1457843805687648522/1487509990758551692/image.png?ex=69c96722&is=69c815a2&hm=3ad3cb18c2ebf16a0ccd31bed4923d3341fae3672907db4934d260d5ba035ed5&=&format=webp&quality=lossless&width=1728&height=404" alt="logo" id="logoImage"></div>
-                <div class="action-buttons-group" id="actionButtonsGroup">
-                    <button class="action-btn-group" id="expandSidebarBtn"><i class="fas fa-bars"></i></button>
-                    <button class="action-btn-group" id="newChatCollapsedBtn"><i class="fas fa-feather-alt"></i></button>
-                    <button class="action-btn-group" id="foldersCollapsedBtn"><i class="fas fa-folder"></i></button>
-                    <button class="action-btn-group" id="genhabCollapsedBtn"><i class="fas fa-magic"></i></button>
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Показать/скрыть панель">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="logo-icon" id="logoIcon">
+                    <img src="https://media.discordapp.net/attachments/1223595469746475049/1486731541206798480/image_2026-03-26_17-18-341.png?ex=69c69225&is=69c540a5&hm=8e6b4f1dd2f6fdb00fe6957dbe357634eb2e1c514787d2f0e9fb392ed893785b&=&format=webp&quality=lossless&width=1858&height=434" alt="logo" id="logoImage">
+                </div>
+                <div class="action-buttons-group" id="actionButtonsGroup" style="display: none;">
+                    <button class="action-btn-group" id="expandSidebarBtn" title="Развернуть боковую панель">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <button class="action-btn-group" id="newChatCollapsedBtn" title="Новый чат">
+                        <i class="fas fa-feather-alt"></i>
+                    </button>
+                    <button class="action-btn-group" id="foldersCollapsedBtn" title="Папки">
+                        <i class="fas fa-folder"></i>
+                    </button>
+                    <button class="action-btn-group" id="genhabCollapsedBtn" title="ГенХаб">
+                        <i class="fas fa-magic"></i>
+                    </button>
                 </div>
             </div>
-            <div class="window-controls">
-                <!-- В вебе управление окном не нужно, но для совместимости оставляю -->
-                <button class="window-btn" id="minimize-btn" style="display: none;">—</button>
-                <button class="window-btn" id="maximize-btn" style="display: none;">□</button>
-                <button class="window-btn close" id="close-btn" style="display: none;">✕</button>
+            <div class="window-controls" style="-webkit-app-region: no-drag;">
+                <!-- в вебе нет управления окном, оставим пустым -->
             </div>
         </header>
 
         <div class="app-container">
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
-                    <div class="action-buttons-frame">
-                        <button id="new-chat-btn" class="frame-btn"><i class="fas fa-feather-alt"></i> Новый чат</button>
-                        <button id="folders-page-btn" class="frame-btn"><i class="fas fa-folder"></i> Папки</button>
-                        <button id="genhab-page-btn" class="frame-btn"><i class="fas fa-magic"></i> ГенХаб</button>
+                    <div class="action-buttons-frame" id="actionButtonsFrame">
+                        <button id="new-chat-btn" class="frame-btn" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
+                        <button id="folders-page-btn" class="frame-btn" title="Папки"><i class="fas fa-folder"></i></button>
+                        <button id="genhab-page-btn" class="frame-btn" title="ГенХаб"><i class="fas fa-magic"></i></button>
                     </div>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
@@ -114,7 +113,7 @@
                     </div>
                 </div>
                 <div class="history-list" id="history-list"></div>
-                <div class="user-panel">
+                <div class="user-panel" id="userPanel">
                     <div class="user-avatar" id="userAvatarPanel">
                         <img id="userAvatarImg" src="" alt="avatar">
                     </div>
@@ -124,26 +123,25 @@
                     <button class="user-menu-btn" id="userMenuBtn"><i class="fas fa-ellipsis-v"></i></button>
                     <div class="user-dropdown" id="userDropdown">
                         <button id="dropdown-discord"><i class="fab fa-discord"></i> Discord-сервер</button>
-                        <button id="dropdown-terms"><i class="fas fa-file-contract"></i> Условия использования</button>
-                        <button id="dropdown-privacy"><i class="fas fa-shield-alt"></i> Политика конфиденциальности</button>
-                        <button id="dropdown-settings"><i class="fas fa-sliders-h"></i> Настройки</button>
+                        <button id="dropdown-terms"><i class="fas fa-file-contract"></i> Terms of Use</button>
+                        <button id="dropdown-privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</button>
                         <button id="dropdown-logout"><i class="fas fa-sign-out-alt"></i> Выйти</button>
                     </div>
                 </div>
             </aside>
-
             <main class="chat-area">
                 <div class="chat-view" id="chatView">
                     <div class="messages-container" id="messages-container"></div>
                     <div class="input-area" id="inputArea">
                         <div class="input-wrapper">
                             <textarea id="user-input" placeholder="Введите свой запрос..." rows="1"></textarea>
-                            <button class="send-btn" id="send-btn" disabled><i class="fas fa-arrow-up"></i></button>
+                            <button class="send-btn" id="send-btn" disabled>
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
                         </div>
                         <div class="input-footer">ИИ-Генерация, только для справки</div>
                     </div>
                 </div>
-
                 <div class="folders-page" id="foldersPage" style="display: none;">
                     <div class="folders-page-header">
                         <h1><i class="fas fa-folder"></i> Папки</h1>
@@ -155,118 +153,41 @@
                         <button id="back-to-chat-from-folders" class="btn-secondary btn-glow"><i class="fas fa-arrow-left"></i> Назад к чату</button>
                     </div>
                 </div>
-
                 <div class="genhab-page" id="genhabPage" style="display: none;">
                     <div class="genhab-header">
                         <h1><i class="fas fa-magic"></i> ГенХаб</h1>
-                        <p>Создавайте изображения с помощью ИИ (в разработке)</p>
+                        <p>Генерация изображений (в разработке)</p>
+                    </div>
+                    <div class="genhab-input-area">
+                        <textarea id="genhab-prompt" placeholder="Опишите изображение..." rows="3"></textarea>
+                        <button id="generate-btn" class="btn-primary btn-glow"><i class="fas fa-image"></i> Сгенерировать</button>
+                    </div>
+                    <div class="genhab-preview" id="genhabPreview" style="display: none;">
+                        <div class="preview-header">
+                            <h3>Результат</h3>
+                            <button id="download-image-btn" class="btn-secondary"><i class="fas fa-download"></i> Скачать</button>
+                        </div>
+                        <img id="generated-image" src="" alt="Сгенерированное изображение">
+                    </div>
+                    <div class="genhab-history">
+                        <div class="history-header">
+                            <h3>История</h3>
+                            <button id="clear-history-btn" class="btn-secondary"><i class="fas fa-trash"></i> Очистить</button>
+                        </div>
+                        <div class="history-list-gen" id="history-list-gen"></div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Модалки -->
-    <div id="avatar-modal" class="avatar-modal" style="display: none;">
-        <div class="avatar-modal-content">
-            <div class="avatar-modal-header">
-                <h3>Выберите аватар</h3>
-                <button class="close-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="avatar-icons">
-                <div class="avatar-icon" data-icon="fa-robot"><i class="fas fa-robot"></i></div>
-                <div class="avatar-icon" data-icon="fa-user"><i class="fas fa-user"></i></div>
-                <div class="avatar-icon" data-icon="fa-star"><i class="fas fa-star"></i></div>
-                <div class="avatar-icon" data-icon="fa-heart"><i class="fas fa-heart"></i></div>
-                <div class="avatar-icon" data-icon="fa-fire"><i class="fas fa-fire"></i></div>
-                <div class="avatar-icon" data-icon="fa-crown"><i class="fas fa-crown"></i></div>
-            </div>
-            <div class="avatar-upload">
-                <button id="upload-avatar-btn" class="upload-btn"><i class="fas fa-upload"></i> Загрузить своё</button>
-                <button id="reset-avatar-btn" class="reset-btn"><i class="fas fa-undo"></i> Сбросить</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="rename-user-modal" class="rename-modal" style="display: none;">
-        <div class="rename-modal-content">
-            <div class="rename-modal-header">
-                <h3>Изменить имя</h3>
-                <button class="close-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="rename-modal-body">
-                <input type="text" id="rename-user-input" placeholder="Новое имя" value="Пользователь">
-                <div class="rename-modal-footer">
-                    <button id="rename-user-confirm" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                    <button id="rename-user-cancel" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="folder-edit-modal" class="folder-edit-modal" style="display: none;">
-        <div class="folder-edit-content">
-            <div class="folder-edit-header">
-                <h3 id="folder-edit-title">Создать папку</h3>
-                <button class="close-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="folder-edit-body">
-                <div class="form-group"><label>Название</label><input type="text" id="folder-name" placeholder="Название папки"></div>
-                <div class="form-group"><label>Описание</label><textarea id="folder-description" rows="2" placeholder="Описание папки"></textarea></div>
-                <div class="form-group"><label>Иконка</label><div class="icon-selector" id="icon-selector"></div></div>
-                <div class="form-group"><label>Цвет</label><div class="color-selector" id="color-selector"></div></div>
-            </div>
-            <div class="folder-edit-footer">
-                <button id="save-folder-btn" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                <button id="cancel-folder-edit-btn" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="folder-chats-modal" class="folder-chats-modal" style="display: none;">
-        <div class="folder-chats-content">
-            <div class="folder-chats-header"><h3 id="folder-chats-title">Чаты в папке</h3><button class="close-modal"><i class="fas fa-times"></i></button></div>
-            <div class="folder-chats-list" id="folder-chats-list"></div>
-        </div>
-    </div>
-
-    <div id="terms-modal" class="terms-modal" style="display: none;">
-        <div class="terms-modal-content">
-            <div class="terms-modal-header"><h2>Условия использования</h2><button class="close-modal"><i class="fas fa-times"></i></button></div>
-            <div class="terms-modal-body"><p>Diamond AI — интеллектуальный помощник. Все данные локальны.</p></div>
-            <div class="terms-modal-footer"><button id="close-terms-btn" class="btn-primary">Принять и закрыть</button></div>
-        </div>
-    </div>
-
-    <div id="privacy-modal" class="privacy-modal" style="display: none;">
-        <div class="privacy-modal-content">
-            <div class="privacy-modal-header"><h2>Политика конфиденциальности</h2><button class="close-modal"><i class="fas fa-times"></i></button></div>
-            <div class="privacy-modal-body"><p>Все данные хранятся локально. Никакой передачи третьим лицам.</p></div>
-            <div class="privacy-modal-footer"><button id="close-privacy-btn" class="btn-primary">Принять и закрыть</button></div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="settings-modal" style="display: none;">
-        <div class="settings-modal-content">
-            <div class="settings-modal-header"><h2>Настройки</h2><button class="close-modal"><i class="fas fa-times"></i></button></div>
-            <div class="settings-section"><h3>Умный поиск</h3>
-                <div class="toggle-switch-wrapper"><label class="toggle-switch"><input type="checkbox" id="smart-search-toggle"><span class="toggle-slider"></span></label><span class="toggle-label">Искать в интернете</span></div>
-            </div>
-            <div class="settings-section"><h3>Язык</h3><select id="language-select"><option value="ru">Русский</option><option value="en">English</option></select></div>
-            <div class="settings-modal-footer"><button id="save-settings-btn" class="btn-primary">Сохранить</button></div>
-        </div>
-    </div>
-
-    <div id="color-picker-modal" class="color-picker-modal" style="display: none;">
-        <div class="color-picker-content">
-            <div class="color-picker-header"><h3>Выбор цвета</h3><button class="close-modal"><i class="fas fa-times"></i></button></div>
-            <div class="color-preview"></div>
-            <canvas id="color-palette-canvas" width="300" height="150"></canvas>
-            <div class="color-sliders"><div class="slider-group"><label>R</label><input type="range" id="red-slider" min="0" max="255"></div>...</div>
-            <div class="color-picker-footer"><button id="color-picker-ok" class="btn-primary">ОК</button><button id="color-picker-cancel" class="btn-secondary">Отмена</button></div>
-        </div>
-    </div>
-
+    <!-- Модалки (аватар, имя, папки, чаты, terms, privacy) -->
+    <div id="avatar-modal" class="avatar-modal" style="display: none;"><div class="avatar-modal-content"><div class="avatar-modal-header"><h3>Выберите аватар</h3><button class="close-modal" id="close-avatar-modal"><i class="fas fa-times"></i></button></div><div class="avatar-icons"><div class="avatar-icon" data-icon="fa-robot"><i class="fas fa-robot"></i></div><div class="avatar-icon" data-icon="fa-user"><i class="fas fa-user"></i></div><div class="avatar-icon" data-icon="fa-star"><i class="fas fa-star"></i></div><div class="avatar-icon" data-icon="fa-heart"><i class="fas fa-heart"></i></div><div class="avatar-icon" data-icon="fa-fire"><i class="fas fa-fire"></i></div><div class="avatar-icon" data-icon="fa-crown"><i class="fas fa-crown"></i></div></div><div class="avatar-upload"><button id="upload-avatar-btn" class="upload-btn"><i class="fas fa-upload"></i> Загрузить своё</button><button id="reset-avatar-btn" class="reset-btn"><i class="fas fa-undo"></i> Сбросить</button></div></div></div>
+    <div id="rename-user-modal" class="rename-modal" style="display: none;"><div class="rename-modal-content"><div class="rename-modal-header"><h3>Изменить имя</h3><button class="close-modal" id="close-rename-user-modal"><i class="fas fa-times"></i></button></div><div class="rename-modal-body"><input type="text" id="rename-user-input" placeholder="Новое имя" value="Пользователь"><div class="rename-modal-footer"><button id="rename-user-confirm" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button><button id="rename-user-cancel" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button></div></div></div></div>
+    <div id="folder-edit-modal" class="folder-edit-modal" style="display: none;"><div class="folder-edit-content"><div class="folder-edit-header"><h3 id="folder-edit-title">Создать папку</h3><button class="close-modal" id="close-folder-edit-modal"><i class="fas fa-times"></i></button></div><div class="folder-edit-body"><div class="form-group"><label>Название</label><input type="text" id="folder-name" placeholder="Название папки"></div><div class="form-group"><label>Описание</label><textarea id="folder-description" rows="2" placeholder="Описание папки"></textarea></div><div class="form-group"><label>Иконка</label><div class="icon-selector" id="icon-selector"></div></div><div class="form-group"><label>Цвет</label><div class="color-selector" id="color-selector"><div class="color-option" data-color="#e74c3c" style="background:#e74c3c"></div><div class="color-option" data-color="#f39c12" style="background:#f39c12"></div><div class="color-option" data-color="#2ecc71" style="background:#2ecc71"></div><div class="color-option" data-color="#3498db" style="background:#3498db"></div><div class="color-option" data-color="#9b59b6" style="background:#9b59b6"></div><div class="color-option" data-color="#1abc9c" style="background:#1abc9c"></div><div class="color-option" data-color="#e67e22" style="background:#e67e22"></div><div class="color-option" data-color="#95a5a6" style="background:#95a5a6"></div></div></div></div><div class="folder-edit-footer"><button id="save-folder-btn" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button><button id="cancel-folder-edit-btn" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button></div></div></div>
+    <div id="folder-chats-modal" class="folder-chats-modal" style="display: none;"><div class="folder-chats-content"><div class="folder-chats-header"><h3 id="folder-chats-title">Чаты в папке</h3><button class="close-modal" id="close-folder-chats-modal"><i class="fas fa-times"></i></button></div><div class="folder-chats-list" id="folder-chats-list"></div></div></div>
+    <div id="terms-modal" class="terms-modal" style="display: none;"><div class="terms-modal-content"><div class="terms-modal-header"><h2><i class="fas fa-file-contract"></i> Terms of Use</h2><button class="close-modal" id="close-terms-modal"><i class="fas fa-times"></i></button></div><div class="terms-modal-body"><h3>1. Общие положения</h3><p>Настоящие Условия использования регулируют отношения между компанией Diamond AI и пользователем...</p><h3>2. Контакты</h3><p>abugay12@mail.ru</p></div><div class="terms-modal-footer"><button id="close-terms-btn" class="btn-primary"><i class="fas fa-check"></i> Принять и закрыть</button></div></div></div>
+    <div id="privacy-modal" class="privacy-modal" style="display: none;"><div class="privacy-modal-content"><div class="privacy-modal-header"><h2><i class="fas fa-shield-alt"></i> Политика конфиденциальности</h2><button class="close-modal" id="close-privacy-modal"><i class="fas fa-times"></i></button></div><div class="privacy-modal-body"><h3>1. Данные</h3><p>Все данные хранятся локально.</p><h3>2. Контакты</h3><p>abugay12@mail.ru</p></div><div class="privacy-modal-footer"><button id="close-privacy-btn" class="btn-primary"><i class="fas fa-check"></i> Принять и закрыть</button></div></div></div>
     <div id="toast-container" class="toast-container"></div>
 
     <script src="app.js"></script>

@@ -1,5 +1,4 @@
 // ==================== WEB VERSION — DIAMOND AI ====================
-// Состояние
 let currentChatId = null;
 let chats = [];
 let folders = [];
@@ -27,14 +26,12 @@ const placeholderTexts = [
     "Сколько звёзд во Вселенной?"
 ];
 
-// Модели
 const PRIORITY_MODELS = [
     'openai/gpt-3.5-turbo',
     'anthropic/claude-3-haiku',
     'google/gemini-flash-1.5'
 ];
 
-// Системный промпт
 const now = new Date();
 const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 const SYSTEM_PROMPT = {
@@ -42,15 +39,10 @@ const SYSTEM_PROMPT = {
     content: `Ты — DIAMOND AI, абсолютный эксперт и идеальный собеседник. Сегодня: ${currentDateStr}. Отвечай максимально кратко и по делу, если пользователь не просит подробностей. Ты знаешь химию, физику, математику, программирование. Используй \ce{}, $$, тройные кавычки для кода.`
 };
 
-// Вспомогательные
 function log(msg) { console.log(`[DIAMOND] ${msg}`); }
+
 function escapeHtml(str) {
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
 
 function showToast(title, message, type = 'info', duration = 3000) {
@@ -73,10 +65,7 @@ function showToast(title, message, type = 'info', duration = 3000) {
     setTimeout(() => toast.remove(), duration);
 }
 
-function saveChats() {
-    localStorage.setItem('diamondChats', JSON.stringify(chats));
-    renderHistory();
-}
+function saveChats() { localStorage.setItem('diamondChats', JSON.stringify(chats)); renderHistory(); }
 function saveFolders() { localStorage.setItem('diamondFolders', JSON.stringify(folders)); }
 
 function scrollToBottom() {
@@ -84,12 +73,11 @@ function scrollToBottom() {
     if (container) container.scrollTop = container.scrollHeight;
 }
 
-// API вызов (прямой)
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Аватары
 function getBotAvatarHTML() {
-    const url = 'assets/bot-av-light.png'; // замени на свою ссылку
+    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {
@@ -232,7 +220,6 @@ function renderChat() {
     });
     scrollToBottom();
 }
-
 function formatDateHeader(ts) { const d=new Date(ts); const t=new Date(); const y=new Date(t); y.setDate(y.getDate()-1); if(d.toDateString()===t.toDateString()) return 'Сегодня'; if(d.toDateString()===y.toDateString()) return 'Вчера'; return d.toLocaleDateString('ru-RU'); }
 function formatTime(ts) { return new Date(ts).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}); }
 
@@ -294,7 +281,6 @@ async function sendMessage() {
 
     const contextMessages = chat.messages.filter(m=>!m.isTyping).slice(-15).map(m=>({role:m.role, content:m.content}));
     const messages = [SYSTEM_PROMPT, ...contextMessages];
-
     const controller = new AbortController(); currentAbortController = controller;
     let success = false, assistantMessage = '';
     const modelsToTry = [...PRIORITY_MODELS];
@@ -367,7 +353,7 @@ function setupChoiceScreen() {
     apiInput.onkeydown = e => { if(e.key === 'Enter') submitBtn.click(); };
 }
 
-// Пустое состояние
+// Пустое состояние (анимированные плейсхолдеры)
 function renderEmptyState() {
     const container = document.getElementById('messages-container');
     container.innerHTML = `
@@ -412,11 +398,7 @@ function renderEmptyState() {
         emptySendBtn.onclick = () => { if(emptyInput.value.trim()) sendMessageFromEmpty(emptyInput.value); };
     }
 }
-
-function sendMessageFromEmpty(text) {
-    document.getElementById('user-input').value = text;
-    sendMessage();
-}
+function sendMessageFromEmpty(text) { document.getElementById('user-input').value = text; sendMessage(); }
 
 // UI переключения
 function updateSendButtonState() {
@@ -424,7 +406,6 @@ function updateSendButtonState() {
     const input = document.getElementById('user-input');
     if(btn) btn.disabled = !input.value.trim() || isWaitingForResponse;
 }
-
 function switchToFoldersView() {
     currentView='folders';
     document.getElementById('chatView').style.display='none';
@@ -432,7 +413,6 @@ function switchToFoldersView() {
     document.getElementById('genhabPage').style.display='none';
     renderFoldersPage();
 }
-
 function switchToChatView() {
     if(placeholderInterval) clearInterval(placeholderInterval);
     currentView='chat';
@@ -441,7 +421,6 @@ function switchToChatView() {
     document.getElementById('genhabPage').style.display='none';
     renderChat();
 }
-
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const isMobile = window.innerWidth <= 768;
@@ -452,17 +431,13 @@ function toggleSidebar() {
         sidebar.classList.toggle('collapsed', sidebarCollapsed);
     }
 }
-
 window.addEventListener('resize', () => {
     const sidebar = document.getElementById('sidebar');
-    if(window.innerWidth > 768) {
-        sidebar.classList.remove('open');
-    } else {
-        sidebar.classList.remove('collapsed');
-    }
+    if(window.innerWidth > 768) sidebar.classList.remove('open');
+    else sidebar.classList.remove('collapsed');
 });
 
-// Настройка папок в модалке
+// Настройка интерфейса папок (иконки и цвета)
 function setupFoldersUI() {
     const iconSel = document.getElementById('icon-selector');
     if(iconSel) iconSel.innerHTML = [
@@ -482,7 +457,7 @@ function setupFoldersUI() {
     });
 }
 
-// Обработчики событий
+// Все обработчики событий
 function setupEventListeners() {
     window.onclick = e => {
         if(e.target === document.getElementById('avatar-modal')) document.getElementById('avatar-modal').style.display = 'none';
@@ -525,12 +500,8 @@ function setupEventListeners() {
     document.getElementById('cancel-folder-edit-btn')?.addEventListener('click', ()=>document.getElementById('folder-edit-modal').style.display='none');
     document.getElementById('close-folder-edit-modal')?.addEventListener('click', ()=>document.getElementById('folder-edit-modal').style.display='none');
     document.getElementById('close-folder-chats-modal')?.addEventListener('click', ()=>document.getElementById('folder-chats-modal').style.display='none');
-    document.getElementById('user-input')?.addEventListener('input', function(){
-        this.style.height='auto'; this.style.height=this.scrollHeight+'px'; updateSendButtonState();
-    });
-    document.getElementById('user-input')?.addEventListener('keydown', e => {
-        if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-    });
+    document.getElementById('user-input')?.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; updateSendButtonState(); });
+    document.getElementById('user-input')?.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
     document.getElementById('dropdown-discord')?.addEventListener('click', ()=>window.open('https://discord.gg/diamondshop','_blank'));
@@ -546,25 +517,12 @@ function setupEventListeners() {
     document.getElementById('close-privacy-modal')?.addEventListener('click', ()=>document.getElementById('privacy-modal').style.display='none');
     document.getElementById('close-terms-btn')?.addEventListener('click', ()=>document.getElementById('terms-modal').style.display='none');
     document.getElementById('close-privacy-btn')?.addEventListener('click', ()=>document.getElementById('privacy-modal').style.display='none');
-    document.getElementById('userNameDisplay')?.addEventListener('click', ()=>{
-        document.getElementById('rename-user-input').value = userName;
-        document.getElementById('rename-user-modal').style.display='flex';
-    });
+    document.getElementById('userNameDisplay')?.addEventListener('click', ()=>{ document.getElementById('rename-user-input').value = userName; document.getElementById('rename-user-modal').style.display='flex'; });
     document.getElementById('close-rename-user-modal')?.addEventListener('click', ()=>document.getElementById('rename-user-modal').style.display='none');
-    document.getElementById('rename-user-confirm')?.addEventListener('click', ()=>{
-        const newName = document.getElementById('rename-user-input').value.trim();
-        if(newName) setUserName(newName);
-        document.getElementById('rename-user-modal').style.display='none';
-    });
+    document.getElementById('rename-user-confirm')?.addEventListener('click', ()=>{ const newName = document.getElementById('rename-user-input').value.trim(); if(newName) setUserName(newName); document.getElementById('rename-user-modal').style.display='none'; });
     document.getElementById('rename-user-cancel')?.addEventListener('click', ()=>document.getElementById('rename-user-modal').style.display='none');
-    document.getElementById('userMenuBtn')?.addEventListener('click', (e)=>{
-        e.stopPropagation();
-        document.getElementById('userDropdown').classList.toggle('show');
-    });
-    document.addEventListener('click', (e)=>{
-        if(!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show');
-    });
-    // Аватар
+    document.getElementById('userMenuBtn')?.addEventListener('click', (e)=>{ e.stopPropagation(); document.getElementById('userDropdown').classList.toggle('show'); });
+    document.addEventListener('click', (e)=>{ if(!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show'); });
     const avatarContainer = document.querySelector('.user-avatar');
     if(avatarContainer) avatarContainer.onclick = () => {
         document.getElementById('avatar-modal').style.display='flex';
@@ -574,34 +532,13 @@ function setupEventListeners() {
         });
     };
     document.getElementById('close-avatar-modal')?.addEventListener('click', ()=>document.getElementById('avatar-modal').style.display='none');
-    document.querySelectorAll('.avatar-icon').forEach(icon => icon.onclick = () => {
-        saveAvatar({ type: 'icon', value: icon.dataset.icon });
-        setUserAvatarUrl('');
-        document.getElementById('avatar-modal').style.display='none';
-    });
+    document.querySelectorAll('.avatar-icon').forEach(icon => icon.onclick = () => { saveAvatar({ type: 'icon', value: icon.dataset.icon }); setUserAvatarUrl(''); document.getElementById('avatar-modal').style.display='none'; });
     document.getElementById('upload-avatar-btn')?.addEventListener('click', ()=>{
         const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
-        inp.onchange = e => {
-            const file = e.target.files[0];
-            if(file){
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    const dataUrl = ev.target.result;
-                    saveAvatar({ type: 'custom', dataUrl, fileName: file.name });
-                    setUserAvatarUrl(dataUrl);
-                    document.getElementById('avatar-modal').style.display='none';
-                };
-                reader.readAsDataURL(file);
-            }
-        };
+        inp.onchange = e => { const file = e.target.files[0]; if(file){ const reader = new FileReader(); reader.onload = ev => { const dataUrl = ev.target.result; saveAvatar({ type: 'custom', dataUrl, fileName: file.name }); setUserAvatarUrl(dataUrl); document.getElementById('avatar-modal').style.display='none'; }; reader.readAsDataURL(file); } };
         inp.click();
     });
-    document.getElementById('reset-avatar-btn')?.addEventListener('click', ()=>{
-        saveAvatar({ type: 'icon', value: 'fa-user' });
-        setUserAvatarUrl('');
-        document.getElementById('avatar-modal').style.display='none';
-    });
-    // Кнопка Стоп
+    document.getElementById('reset-avatar-btn')?.addEventListener('click', ()=>{ saveAvatar({ type: 'icon', value: 'fa-user' }); setUserAvatarUrl(''); document.getElementById('avatar-modal').style.display='none'; });
     document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
 }
 
@@ -622,7 +559,7 @@ async function showLoadingScreen() {
     ws.style.display='none';
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// Инициализация
 (async function() {
     log('Загрузка...');
     loadFolders();

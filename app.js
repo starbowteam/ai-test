@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let currentChatId = null;
 let chats = [];
 let folders = [];
-let currentUser = null;               // { login, email, secretWord, name, avatar, fa_icon, ... }
+let currentUser = null;               // { login, secretWord, name, avatar, fa_icon, ... }
 let userApiKey = '';                  // OpenRouter API-ключ
 let isWaitingForResponse = false;
 let currentAbortController = null;
@@ -83,14 +83,14 @@ async function exchangeTicket(ticket) {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
     };
     try {
-        // 1. Найти неиспользованный тикет
+        // 1. Ищем неиспользованный тикет по полю ticket и used=false
         let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
         if (!resp.ok) throw new Error('Ошибка поиска тикета');
         const tickets = await resp.json();
         if (!tickets.length) throw new Error('Тикет не найден или уже использован');
         const ticketData = tickets[0];
 
-        // 2. Пометить тикет использованным
+        // 2. Помечаем тикет использованным
         resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
             method: 'PATCH',
             headers: { ...headers, 'Content-Type': 'application/json' },
@@ -98,28 +98,18 @@ async function exchangeTicket(ticket) {
         });
         if (!resp.ok) throw new Error('Не удалось обновить тикет');
 
-        // 3. Найти пользователя. Если email не найден, пробуем по логину (email до @)
-        let user = null;
-        if (ticketData.email) {
-            resp = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${ticketData.email}`, { headers });
-            if (resp.ok) {
-                const users = await resp.json();
-                if (users.length) user = users[0];
-            }
-            if (!user) {
-                const login = ticketData.email.split('@')[0];
-                resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
-                if (resp.ok) {
-                    const users = await resp.json();
-                    if (users.length) user = users[0];
-                }
-            }
-        }
-        if (!user) throw new Error('Пользователь не найден');
+        // 3. Берём login из тикета и ищем пользователя
+        const login = ticketData.login;
+        if (!login) throw new Error('Тикет не содержит логин');
+
+        resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
+        if (!resp.ok) throw new Error('Ошибка получения пользователя');
+        const users = await resp.json();
+        if (!users.length) throw new Error('Пользователь не найден');
+        const user = users[0];
 
         return {
             login: user.login,
-            email: user.email || ticketData.email,
             secretWord: user.secret_word,
             name: user.name || '',
             avatar: user.avatar || '',
@@ -168,7 +158,7 @@ function logout() {
 
 // ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
-    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку
+    const url = 'assets/bot-av-light.png'; // ваша ссылка
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {

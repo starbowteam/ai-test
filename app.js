@@ -256,7 +256,7 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
-    // клик по чатам в папке — сразу переключаемся и возвращаемся к чату
+    // клик по папке — сразу открываем первый чат в ней и возвращаемся в чат
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
@@ -264,8 +264,8 @@ function renderFoldersPage() {
         if (folder) {
             const chatsIn = chats.filter(c => c.folderId === id);
             if (chatsIn.length > 0) {
-                switchChat(chatsIn[0].id);      // открываем первый чат в папке
-                switchToChatView();             // сразу уходим из папок в чат
+                switchChat(chatsIn[0].id);
+                switchToChatView();
                 showToast('Чат открыт', `Папка: ${folder.name}`, 'success');
             } else {
                 showToast('Пусто', 'В этой папке нет чатов', 'info');
@@ -608,7 +608,6 @@ function toggleSidebar() {
         if (titleBar) titleBar.classList.toggle('collapsed', sidebarCollapsed);
         if (collapsedActions) {
             collapsedActions.classList.toggle('show', sidebarCollapsed);
-            // принудительно запускаем анимацию при показе
             if (sidebarCollapsed) {
                 collapsedActions.style.animation = 'none';
                 collapsedActions.offsetHeight; // рефлоу

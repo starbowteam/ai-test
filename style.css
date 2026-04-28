@@ -466,7 +466,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .avatar {
-  width: 42px; height: 42px;
+  width: 45px; height: 45px;
   border-radius: 50%;
   background: var(--bg-tertiary);
   display: flex;

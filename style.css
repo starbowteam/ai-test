@@ -18,7 +18,7 @@
     --radius-xl: 28px;
     --radius-btn: 40px;
     --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    --collapsed-offset: -15px;   /* ← настройка: двигай панельку влево/вправо */
+    --collapsed-offset: -15px;   /* ← сдвиг панельки влево на 15px */
 }
 
 * {
@@ -190,7 +190,7 @@ body {
     transform: scale(0.75);
     transform-origin: left center;
     opacity: 0;
-    margin-left: var(--collapsed-offset);   /* ← регулируемое смещение */
+    margin-left: var(--collapsed-offset);   /* сдвиг -15px */
 }
 .collapsed-actions.show {
     display: flex;
@@ -716,7 +716,7 @@ textarea::placeholder { color: #6a6a6a; }
     justify-content: center;
     transition: var(--transition);
 }
-.close-modal:hover { background: var(--bg-hover); color: var(--text-primary); }  /* ← красный убран, теперь стандартный серый */
+.close-modal:hover { background: var(--bg-hover); color: var(--text-primary); }  /* красный hover убран */
 .avatar-icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
 .avatar-icon {
     background: var(--bg-tertiary);

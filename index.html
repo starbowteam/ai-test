@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>DIAMOND AI · Веб‑помощник</title>
+    <link rel="icon" type="image/x-icon" href="fulco.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -23,30 +24,23 @@
                 <div class="loading-bar" id="loadingBar"></div>
             </div>
         </div>
-        <img src="https://cdn.discordapp.com/attachments/1223595469746475049/1486732262929338378/IMG_8307.PNG?ex=69c692d1&is=69c54151&hm=7db5f0ac235605888c45452d53c38e8db57d2b4fda5a6f36e6dfe9ed50c85883&" class="loading-character" id="loadingCharacter" alt="character">
+        <img src="assets/loading-character.png" class="loading-character" id="loadingCharacter" alt="character">
     </div>
 
-    <!-- Экран входа -->
+    <!-- Экран входа Diamkey -->
     <div class="choice-screen" id="choiceScreen" style="display: none;">
         <div class="choice-container">
             <div class="logo">
                 <img src="fulco.ico" alt="DIAMOND AI Logo" class="logo-img">
                 <h1>DIAMOND AI</h1>
-                <p>Для начала работы введите API-ключ OpenRouter</p>
+                <p>Войдите через Diamkey, чтобы продолжить</p>
             </div>
-            <div class="api-input-section" id="apiInputSection">
-                <div class="input-group">
-                    <label>API-ключ OpenRouter</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-key"></i>
-                        <input type="password" id="apiKeyInput" placeholder="sk-or-v1-...">
-                    </div>
-                </div>
-                <button class="btn btn-primary" id="submitApiKeyBtn"><i class="fas fa-arrow-right"></i> Войти</button>
-                <p class="footer-note">
-                    <a href="https://openrouter.ai/keys" target="_blank"><i class="fas fa-external-link-alt"></i> Получить ключ</a>
-                </p>
-            </div>
+            <button class="btn btn-primary btn-large" id="diamkeyLoginBtn">
+                <i class="fas fa-gem"></i> Войти по Diamkey
+            </button>
+            <p class="footer-note">
+                Нет аккаунта? <a href="https://diamkey.com/register" target="_blank">Создать Diamkey</a>
+            </p>
         </div>
     </div>
 
@@ -93,6 +87,7 @@
                     </div>
                     <button class="user-menu-btn" id="userMenuBtn"><i class="fas fa-ellipsis-v"></i></button>
                     <div class="user-dropdown" id="userDropdown">
+                        <button id="dropdown-api-key"><i class="fas fa-key"></i> API-ключ OpenRouter</button>
                         <button id="dropdown-discord"><i class="fab fa-discord"></i> Discord-сервер</button>
                         <button id="dropdown-terms"><i class="fas fa-file-contract"></i> Terms of Use</button>
                         <button id="dropdown-privacy"><i class="fas fa-shield-alt"></i> Privacy Policy</button>
@@ -128,28 +123,8 @@
                     </div>
                 </div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
-                    <div class="genhab-header">
-                        <h1><i class="fas fa-magic"></i> ГенХаб</h1>
-                        <p>Генерация изображений (в разработке)</p>
-                    </div>
-                    <div class="genhab-input-area">
-                        <textarea id="genhab-prompt" placeholder="Опишите изображение..." rows="3"></textarea>
-                        <button id="generate-btn" class="btn-primary btn-glow"><i class="fas fa-image"></i> Сгенерировать</button>
-                    </div>
-                    <div class="genhab-preview" id="genhabPreview" style="display: none;">
-                        <div class="preview-header">
-                            <h3>Результат</h3>
-                            <button id="download-image-btn" class="btn-secondary"><i class="fas fa-download"></i> Скачать</button>
-                        </div>
-                        <img id="generated-image" src="" alt="Сгенерированное изображение">
-                    </div>
-                    <div class="genhab-history">
-                        <div class="history-header">
-                            <h3>История</h3>
-                            <button id="clear-history-btn" class="btn-secondary"><i class="fas fa-trash"></i> Очистить</button>
-                        </div>
-                        <div class="history-list-gen" id="history-list-gen"></div>
-                    </div>
+                    <!-- ГенХаб (заглушка) -->
+                    <div class="genhab-header"><h1><i class="fas fa-magic"></i> ГенХаб</h1><p>В разработке</p></div>
                 </div>
             </main>
         </div>
@@ -280,6 +255,24 @@
             </div>
             <div class="privacy-modal-footer">
                 <button id="close-privacy-btn" class="btn-primary"><i class="fas fa-check"></i> Принять и закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка ввода OpenRouter API-ключа -->
+    <div id="apikey-modal" class="apikey-modal" style="display: none;">
+        <div class="apikey-modal-content">
+            <div class="apikey-modal-header">
+                <h3><i class="fas fa-key"></i> API-ключ OpenRouter</h3>
+                <button class="close-modal" id="close-apikey-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="apikey-modal-body">
+                <input type="password" id="apikey-input" placeholder="sk-or-v1-..." style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white;">
+                <p style="font-size:12px; color: var(--text-secondary); margin-top:8px;">Ключ сохраняется для вашего Diamkey-аккаунта</p>
+            </div>
+            <div class="apikey-modal-footer" style="display:flex; gap:12px; margin-top:20px;">
+                <button id="save-apikey-btn" class="btn-primary">Сохранить</button>
+                <button id="cancel-apikey-btn" class="btn-secondary">Отмена</button>
             </div>
         </div>
     </div>

@@ -358,7 +358,7 @@ function renderEmptyState() {
     const container = document.getElementById('messages-container');
     container.innerHTML = `
         <div class="empty-state">
-            <img src="assets/photo_2026-03-10_13-52-33-Photoroom.png" class="empty-logo" alt="Diamond AI">
+            <img src="fulco.ico" class="empty-logo" alt="Diamond AI">
             <div class="empty-text">Чем могу помочь?</div>
             <div class="empty-input-area">
                 <div class="input-wrapper">

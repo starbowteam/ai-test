@@ -7,7 +7,6 @@
     <link rel="icon" type="image/x-icon" href="fulco.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <!-- Шрифт Inter (как на Diamkey) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -43,7 +42,7 @@
 
     <!-- Основной интерфейс -->
     <div class="main-ui" id="mainUI" style="display: none;">
-        <header class="title-bar">
+        <header class="title-bar" id="titleBar">
             <div class="title-bar-left">
                 <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Показать/скрыть панель">
                     <i class="fas fa-bars"></i>
@@ -52,7 +51,7 @@
                     <img src="fulco.ico" alt="logo" class="logo-icon-img">
                     <span class="logo-text">DIAMOND AI</span>
                 </div>
-                <!-- Компактные кнопки при свёрнутом сайдбаре (по умолчанию скрыты) -->
+                <!-- Компактные кнопки при свёрнутом сайдбаре -->
                 <div class="collapsed-actions" id="collapsedActions">
                     <button class="action-btn-icon" id="collapsedNewChat" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
                     <button class="action-btn-icon" id="collapsedFolders" title="Папки"><i class="fas fa-folder"></i></button>
@@ -130,109 +129,40 @@
         </div>
     </div>
 
-    <!-- Модалка аватара (оставлена для возможных будущих нужд, но сейчас не активируется) -->
-    <div id="avatar-modal" class="avatar-modal" style="display: none;">
-        <div class="avatar-modal-content">
-            <div class="avatar-modal-header">
-                <h3>Выберите аватар</h3>
-                <button class="close-modal" id="close-avatar-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="avatar-icons">
-                <div class="avatar-icon" data-icon="fa-robot"><i class="fas fa-robot"></i></div>
-                <div class="avatar-icon" data-icon="fa-user"><i class="fas fa-user"></i></div>
-                <div class="avatar-icon" data-icon="fa-star"><i class="fas fa-star"></i></div>
-                <div class="avatar-icon" data-icon="fa-heart"><i class="fas fa-heart"></i></div>
-                <div class="avatar-icon" data-icon="fa-fire"><i class="fas fa-fire"></i></div>
-                <div class="avatar-icon" data-icon="fa-crown"><i class="fas fa-crown"></i></div>
-            </div>
-            <div class="avatar-upload">
-                <button id="upload-avatar-btn" class="upload-btn"><i class="fas fa-upload"></i> Загрузить своё</button>
-                <button id="reset-avatar-btn" class="reset-btn"><i class="fas fa-undo"></i> Сбросить</button>
-            </div>
-        </div>
-    </div>
+    <!-- Модалки (оставлены для возможного использования) -->
+    <div id="avatar-modal" class="avatar-modal" style="display: none;">...</div>
+    <div id="rename-user-modal" class="rename-modal" style="display: none;">...</div>
+    <div id="folder-edit-modal" class="folder-edit-modal" style="display: none;">...</div>
+    <div id="folder-chats-modal" class="folder-chats-modal" style="display: none;">...</div>
 
-    <!-- Модалка переименования пользователя (больше не нужна, но оставлена) -->
-    <div id="rename-user-modal" class="rename-modal" style="display: none;">
-        <div class="rename-modal-content">
-            <div class="rename-modal-header">
-                <h3>Изменить имя</h3>
-                <button class="close-modal" id="close-rename-user-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="rename-modal-body">
-                <input type="text" id="rename-user-input" placeholder="Новое имя" value="Пользователь">
-                <div class="rename-modal-footer">
-                    <button id="rename-user-confirm" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                    <button id="rename-user-cancel" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модалка создания/редактирования папки -->
-    <div id="folder-edit-modal" class="folder-edit-modal" style="display: none;">
-        <div class="folder-edit-content">
-            <div class="folder-edit-header">
-                <h3 id="folder-edit-title">Создать папку</h3>
-                <button class="close-modal" id="close-folder-edit-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="folder-edit-body">
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="folder-name" placeholder="Название папки">
-                </div>
-                <div class="form-group">
-                    <label>Описание</label>
-                    <textarea id="folder-description" rows="2" placeholder="Описание папки"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Иконка</label>
-                    <div class="icon-selector" id="icon-selector"></div>
-                </div>
-                <div class="form-group">
-                    <label>Цвет</label>
-                    <div class="color-selector" id="color-selector">
-                        <div class="color-option" data-color="#e74c3c" style="background:#e74c3c"></div>
-                        <div class="color-option" data-color="#f39c12" style="background:#f39c12"></div>
-                        <div class="color-option" data-color="#2ecc71" style="background:#2ecc71"></div>
-                        <div class="color-option" data-color="#3498db" style="background:#3498db"></div>
-                        <div class="color-option" data-color="#9b59b6" style="background:#9b59b6"></div>
-                        <div class="color-option" data-color="#1abc9c" style="background:#1abc9c"></div>
-                        <div class="color-option" data-color="#e67e22" style="background:#e67e22"></div>
-                        <div class="color-option" data-color="#95a5a6" style="background:#95a5a6"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="folder-edit-footer">
-                <button id="save-folder-btn" class="btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                <button id="cancel-folder-edit-btn" class="btn-secondary"><i class="fas fa-times"></i> Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модалка просмотра чатов в папке -->
-    <div id="folder-chats-modal" class="folder-chats-modal" style="display: none;">
-        <div class="folder-chats-content">
-            <div class="folder-chats-header">
-                <h3 id="folder-chats-title">Чаты в папке</h3>
-                <button class="close-modal" id="close-folder-chats-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="folder-chats-list" id="folder-chats-list"></div>
-        </div>
-    </div>
-
-    <!-- Модалка Terms of Use -->
+    <!-- Terms of Use (развернутый) -->
     <div id="terms-modal" class="terms-modal" style="display: none;">
         <div class="terms-modal-content">
             <div class="terms-modal-header">
-                <h2><i class="fas fa-file-contract"></i> Terms of Use</h2>
+                <h2><i class="fas fa-file-contract"></i> Условия использования</h2>
                 <button class="close-modal" id="close-terms-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="terms-modal-body">
                 <h3>1. Общие положения</h3>
-                <p>Настоящие Условия использования регулируют отношения между компанией Diamond AI и пользователем...</p>
-                <h3>2. Контакты</h3>
-                <p>abugay12@mail.ru</p>
+                <p>Настоящие Условия использования (далее — «Условия») регулируют отношения между компанией Diamond AI («Компания», «мы», «нас») и любым физическим или юридическим лицом («Пользователь», «вы»), использующим сервис Diamond AI («Сервис»).</p>
+                <p>Используя Сервис, вы полностью и безоговорочно соглашаетесь с настоящими Условиями. Если вы не согласны с каким-либо пунктом, вы обязаны немедленно прекратить использование Сервиса.</p>
+                <h3>2. Предоставление услуг</h3>
+                <p>Сервис предоставляет доступ к искусственному интеллекту для генерации текста и выполнения иных задач. Доступ может быть предоставлен только авторизованным пользователям через DiamKey. Мы оставляем за собой право изменять, приостанавливать или прекращать работу Сервиса в любое время без предварительного уведомления.</p>
+                <h3>3. Обязанности пользователя</h3>
+                <p>Пользователь обязуется не использовать Сервис для:</p>
+                <ul>
+                    <li>нарушения законодательства Российской Федерации;</li>
+                    <li>распространения вредоносного ПО, спама, фишинга;</li>
+                    <li>дискриминации, языка вражды, угроз;</li>
+                    <li>попыток взлома или несанкционированного доступа к системам Сервиса.</li>
+                </ul>
+                <p>Пользователь несёт полную ответственность за сохранность своих учётных данных (логин, пароль, секретное слово).</p>
+                <h3>4. Интеллектуальная собственность</h3>
+                <p>Все права на программный код, дизайн, логотипы и контент, созданный Компанией, принадлежат Компании. Пользователь сохраняет права на собственный контент, отправленный через Сервис, однако предоставляет Компании неисключительную лицензию на его обработку в целях функционирования Сервиса.</p>
+                <h3>5. Ограничение ответственности</h3>
+                <p>Сервис предоставляется «как есть» (as is). Компания не гарантирует бесперебойную или безошибочную работу Сервиса, а также не несёт ответственности за любой ущерб, возникший в результате использования или невозможности использования Сервиса.</p>
+                <h3>6. Контакты</h3>
+                <p>По всем вопросам, связанным с настоящими Условиями, обращайтесь по адресу: <a href="mailto:abugay12@mail.ru">abugay12@mail.ru</a>.</p>
             </div>
             <div class="terms-modal-footer">
                 <button id="close-terms-btn" class="btn-primary"><i class="fas fa-check"></i> Принять и закрыть</button>
@@ -240,7 +170,7 @@
         </div>
     </div>
 
-    <!-- Модалка Privacy Policy -->
+    <!-- Privacy Policy (развернутая) -->
     <div id="privacy-modal" class="privacy-modal" style="display: none;">
         <div class="privacy-modal-content">
             <div class="privacy-modal-header">
@@ -248,10 +178,18 @@
                 <button class="close-modal" id="close-privacy-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="privacy-modal-body">
-                <h3>1. Данные</h3>
-                <p>Все данные хранятся локально.</p>
-                <h3>2. Контакты</h3>
-                <p>abugay12@mail.ru</p>
+                <h3>1. Сбор данных</h3>
+                <p>Мы собираем только те данные, которые необходимы для работы Сервиса: логин DiamKey, секретное слово (для идентификации), историю чатов (хранится локально в вашем браузере). Мы не собираем и не храним ваши персональные данные, если вы не предоставили их добровольно через форму DiamKey.</p>
+                <h3>2. Использование данных</h3>
+                <p>Собранные данные используются исключительно для авторизации, предоставления доступа к функциям Сервиса и улучшения качества обслуживания. Мы не передаём данные третьим лицам, за исключением случаев, предусмотренных законодательством РФ.</p>
+                <h3>3. Хранение и защита</h3>
+                <p>Все данные хранятся в зашифрованном виде на серверах Supabase. Доступ к персональным данным возможен только с использованием вашего секретного слова. Тем не менее, мы не можем гарантировать абсолютную защиту от несанкционированного доступа.</p>
+                <h3>4. Файлы cookie</h3>
+                <p>Сервис использует локальное хранилище браузера (localStorage) для сохранения настроек и истории чатов. Файлы cookie не применяются. Вы можете в любой момент очистить локальное хранилище в настройках вашего браузера.</p>
+                <h3>5. Ваши права</h3>
+                <p>Вы имеете право запросить удаление всех ваших данных из нашей базы. Для этого свяжитесь с нами по указанным ниже контактам. Обратите внимание, что после удаления восстановление данных невозможно.</p>
+                <h3>6. Контакты</h3>
+                <p>Если у вас возникли вопросы относительно этой Политики конфиденциальности, пожалуйста, напишите нам: <a href="mailto:abugay12@mail.ru">abugay12@mail.ru</a>.</p>
             </div>
             <div class="privacy-modal-footer">
                 <button id="close-privacy-btn" class="btn-primary"><i class="fas fa-check"></i> Принять и закрыть</button>
@@ -259,24 +197,7 @@
         </div>
     </div>
 
-    <!-- Модалка ввода OpenRouter API-ключа -->
-    <div id="apikey-modal" class="apikey-modal" style="display: none;">
-        <div class="apikey-modal-content">
-            <div class="apikey-modal-header">
-                <h3><i class="fas fa-key"></i> API-ключ OpenRouter</h3>
-                <button class="close-modal" id="close-apikey-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="apikey-modal-body">
-                <input type="password" id="apikey-input" placeholder="sk-or-v1-..." style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white;">
-                <p style="font-size:12px; color: var(--text-secondary); margin-top:8px;">Ключ сохраняется для вашего Diamkey-аккаунта</p>
-            </div>
-            <div class="apikey-modal-footer" style="display:flex; gap:12px; margin-top:20px;">
-                <button id="save-apikey-btn" class="btn-primary">Сохранить</button>
-                <button id="cancel-apikey-btn" class="btn-secondary">Отмена</button>
-            </div>
-        </div>
-    </div>
-
+    <div id="apikey-modal" class="apikey-modal" style="display: none;">...</div>
     <div id="toast-container" class="toast-container"></div>
 
     <script src="app.js"></script>

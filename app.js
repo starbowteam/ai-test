@@ -83,14 +83,12 @@ async function exchangeTicket(ticket) {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
     };
     try {
-        // 1. Ищем неиспользованный тикет по полю ticket и used=false
         let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
         if (!resp.ok) throw new Error('Ошибка поиска тикета');
         const tickets = await resp.json();
         if (!tickets.length) throw new Error('Тикет не найден или уже использован');
         const ticketData = tickets[0];
 
-        // 2. Помечаем тикет использованным
         resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
             method: 'PATCH',
             headers: { ...headers, 'Content-Type': 'application/json' },
@@ -98,7 +96,6 @@ async function exchangeTicket(ticket) {
         });
         if (!resp.ok) throw new Error('Не удалось обновить тикет');
 
-        // 3. Берём login из тикета и ищем пользователя
         const login = ticketData.login;
         if (!login) throw new Error('Тикет не содержит логин');
 
@@ -153,12 +150,13 @@ function logout() {
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
+    setupDiamkeyButton(); // переустанавливаем обработчик кнопки
     showToast('Вы вышли', '', 'info');
 }
 
 // ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
-    const url = 'assets/bot-av-light.png'; // ваша ссылка
+    const url = 'assets/bot-av-light.png'; // замени на актуальную ссылку
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
 }
 function getUserAvatarHTML() {
@@ -689,21 +687,13 @@ function sendMessageFromEmpty(text) {
     sendMessage();
 }
 
-// ========== ЗАГРУЗОЧНЫЙ ЭКРАН ==========
+// ========== ЗАГРУЗОЧНЫЙ ЭКРАН (простой спиннер 2.5 сек) ==========
 async function showLoadingScreen() {
     const ws = document.getElementById('welcomeScreen');
     ws.style.display = 'flex';
-    const loadingStatus = document.getElementById('loadingStatus');
-    const loadingBar = document.getElementById('loadingBar');
-    const statuses = ["Загрузка нейросети...","Активация кристаллов...","Калибровка ответов...","Запуск DIAMOND AI..."];
-    let idx = 0, progress = 0;
-    const si = setInterval(() => { idx = (idx + 1) % statuses.length; if (loadingStatus) loadingStatus.textContent = statuses[idx]; }, 1500);
-    const pi = setInterval(() => { progress += 1; if (loadingBar) loadingBar.style.width = progress + '%'; if (progress >= 100) clearInterval(pi); }, 70);
-    setTimeout(() => document.getElementById('loadingCharacter')?.classList.add('visible'), 3000);
-    await new Promise(r => setTimeout(r, 7000));
-    clearInterval(si); clearInterval(pi);
+    await new Promise(r => setTimeout(r, 2500));
     ws.classList.add('fade-out');
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 400));
     ws.style.display = 'none';
 }
 
@@ -852,6 +842,7 @@ function setupEventListeners() {
     userAvatarUrl = localStorage.getItem('userAvatarUrl') || '';
     userName = localStorage.getItem('userName') || 'Пользователь';
 
+    // Показываем простой спиннер
     await showLoadingScreen();
 
     const ticketProcessed = await processDiamkeyReturn();

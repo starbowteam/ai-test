@@ -147,7 +147,7 @@ function logout() {
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
-    setupDiamkeyButton(); // переустанавливаем кнопку входа
+    setupDiamkeyButton();
     showToast('Вы вышли', '', 'info');
 }
 
@@ -256,22 +256,20 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
+    // клик по чатам в папке — сразу переключаемся и возвращаемся к чату
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
         const folder = folders.find(f => f.id === id);
         if (folder) {
             const chatsIn = chats.filter(c => c.folderId === id);
-            document.getElementById('folder-chats-title').innerText = `Чаты в папке «${folder.name}»`;
-            document.getElementById('folder-chats-list').innerHTML = chatsIn.length
-                ? chatsIn.map(c => `<div class="folder-chat-item" data-chat-id="${c.id}"><i class="fas fa-comment"></i> ${escapeHtml(c.title)}</div>`).join('')
-                : '<div style="padding:20px;">Нет чатов</div>';
-            document.getElementById('folder-chats-modal').style.display = 'flex';
-            document.querySelectorAll('.folder-chat-item').forEach(it => it.onclick = () => {
-                switchChat(it.dataset.chatId);
-                document.getElementById('folder-chats-modal').style.display = 'none';
-                if (currentView === 'folders') switchToChatView();
-            });
+            if (chatsIn.length > 0) {
+                switchChat(chatsIn[0].id);      // открываем первый чат в папке
+                switchToChatView();             // сразу уходим из папок в чат
+                showToast('Чат открыт', `Папка: ${folder.name}`, 'success');
+            } else {
+                showToast('Пусто', 'В этой папке нет чатов', 'info');
+            }
         }
     });
 
@@ -608,7 +606,15 @@ function toggleSidebar() {
         sidebarCollapsed = !sidebarCollapsed;
         sidebar.classList.toggle('collapsed', sidebarCollapsed);
         if (titleBar) titleBar.classList.toggle('collapsed', sidebarCollapsed);
-        if (collapsedActions) collapsedActions.classList.toggle('show', sidebarCollapsed);
+        if (collapsedActions) {
+            collapsedActions.classList.toggle('show', sidebarCollapsed);
+            // принудительно запускаем анимацию при показе
+            if (sidebarCollapsed) {
+                collapsedActions.style.animation = 'none';
+                collapsedActions.offsetHeight; // рефлоу
+                collapsedActions.style.animation = 'slideIn 0.3s ease forwards';
+            }
+        }
     }
 }
 window.addEventListener('resize', () => {

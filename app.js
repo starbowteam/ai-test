@@ -13,9 +13,6 @@ let currentAbortController = null;
 let currentStreamingMessageId = null;
 let lastNotificationTime = 0;
 const NOTIFICATION_DEBOUNCE = 1000;
-let userAvatar = { type: 'icon', value: 'fa-user' }; // уже не используется для аватара пользователя
-let userAvatarUrl = localStorage.getItem('userAvatarUrl') || '';
-let userName = localStorage.getItem('userName') || 'Пользователь';
 let sidebarCollapsed = false;
 let currentEditingFolderId = null;
 let currentView = 'chat';
@@ -150,11 +147,11 @@ function logout() {
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
-    setupDiamkeyButton();
+    setupDiamkeyButton(); // переустанавливаем кнопку входа
     showToast('Вы вышли', '', 'info');
 }
 
-// ========== АВАТАРЫ ==========
+// ========== АВАТАРЫ (из DiamKey, без локального изменения) ==========
 function getBotAvatarHTML() {
     const url = 'bot-av.ico';
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
@@ -203,7 +200,7 @@ function showRenameModal(chatId) {
     if (!chat) return;
     const modal = document.createElement('div'); modal.className = 'rename-modal'; modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2600;';
     const content = document.createElement('div'); content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border-color);';
-    content.innerHTML = `<h3 style="margin-bottom:16px;">Переименовать чат</h3><input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white; margin-bottom:20px;"><div style="display:flex; gap:12px;"><button id="rename-confirm" class="btn-primary">Сохранить</button><button id="rename-cancel" class="btn-secondary">Отмена</button></div>`;
+    content.innerHTML = `<h3 style="margin-bottom:16px;">Переименовать чат</h3><input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white; margin-bottom:20px;"><div style="display:flex; gap:12px;"><button id="rename-confirm" class="btn btn-primary">Сохранить</button><button id="rename-cancel" class="btn btn-secondary">Отмена</button></div>`;
     modal.appendChild(content); document.body.appendChild(modal);
     const input = content.querySelector('#rename-input'); input.focus();
     const close = () => modal.remove();
@@ -303,8 +300,8 @@ function showFolderSelectModal(chatId) {
     content.innerHTML = `
         <h3 style="margin-bottom:16px;">Выбрать папку</h3>
         <div style="max-height:300px; overflow-y:auto;" id="folder-options-list"></div>
-        <button id="create-folder-from-select" style="margin-top:12px;" class="btn-secondary">+ Новая папка</button>
-        <button id="close-folder-select" class="btn-secondary">Отмена</button>
+        <button id="create-folder-from-select" style="margin-top:12px;" class="btn btn-secondary">+ Новая папка</button>
+        <button id="close-folder-select" class="btn btn-secondary">Отмена</button>
     `;
     modal.appendChild(content); document.body.appendChild(modal);
 
@@ -558,22 +555,25 @@ function setupApiKeyModal() {
     const saveBtn = document.getElementById('save-apikey-btn');
     const cancelBtn = document.getElementById('cancel-apikey-btn');
     const input = document.getElementById('apikey-input');
-    saveBtn.onclick = () => {
-        const key = input.value.trim();
-        if (!key) {
-            showToast('Ошибка', 'Введите ключ', 'warning');
-            return;
-        }
-        if (!currentUser) {
-            showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error');
-            return;
-        }
-        saveUserApiKey(currentUser.login, key);
-        document.getElementById('apikey-modal').style.display = 'none';
-        showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
-    };
-    cancelBtn.onclick = () => document.getElementById('apikey-modal').style.display = 'none';
-    document.getElementById('close-apikey-modal').onclick = () => document.getElementById('apikey-modal').style.display = 'none';
+    if (saveBtn) {
+        saveBtn.onclick = () => {
+            const key = input.value.trim();
+            if (!key) {
+                showToast('Ошибка', 'Введите ключ', 'warning');
+                return;
+            }
+            if (!currentUser) {
+                showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error');
+                return;
+            }
+            saveUserApiKey(currentUser.login, key);
+            document.getElementById('apikey-modal').style.display = 'none';
+            showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
+        };
+    }
+    if (cancelBtn) cancelBtn.onclick = () => document.getElementById('apikey-modal').style.display = 'none';
+    const closeBtn = document.getElementById('close-apikey-modal');
+    if (closeBtn) closeBtn.onclick = () => document.getElementById('apikey-modal').style.display = 'none';
 }
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ UI ==========

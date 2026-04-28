@@ -16,14 +16,14 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
 </head>
 <body>
-    <!-- Загрузочный экран (простой спиннер) -->
+    <!-- Загрузочный экран -->
     <div class="welcome-screen" id="welcomeScreen">
         <div class="spinner-container">
             <i class="fas fa-circle-notch fa-spin" style="font-size: 3rem; color: #fff;"></i>
         </div>
     </div>
 
-    <!-- Экран входа Diamkey -->
+    <!-- Экран входа -->
     <div class="choice-screen" id="choiceScreen" style="display: none;">
         <div class="choice-container">
             <div class="logo">
@@ -51,7 +51,6 @@
                     <img src="fulco.ico" alt="logo" class="logo-icon-img">
                     <span class="logo-text">DIAMOND AI</span>
                 </div>
-                <!-- Компактные кнопки (заменяют текст) -->
                 <div class="collapsed-actions" id="collapsedActions">
                     <button class="action-btn-icon" id="collapsedNewChat" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
                     <button class="action-btn-icon" id="collapsedFolders" title="Папки"><i class="fas fa-folder"></i></button>
@@ -95,7 +94,7 @@
             <main class="chat-area">
                 <div class="chat-view" id="chatView">
                     <div class="messages-container" id="messages-container"></div>
-                    <div class="input-area" id="inputArea">
+                    <div class="input-area" id="inputArea" style="display: none;">
                         <div class="input-wrapper">
                             <textarea id="user-input" placeholder="Введите свой запрос..." rows="1"></textarea>
                             <button class="stop-btn" id="stop-btn" style="display: none;" title="Остановить генерацию">
@@ -129,7 +128,7 @@
         </div>
     </div>
 
-    <!-- Модалка аватара (оставлена) -->
+    <!-- Модалка аватара -->
     <div id="avatar-modal" class="avatar-modal" style="display: none;">
         <div class="avatar-modal-content">
             <div class="avatar-modal-header">
@@ -220,14 +219,8 @@
         </div>
     </div>
 
-    <!-- Terms of Use (ПОЛНЫЙ ТЕКСТ, без крестика) -->
-    <div id="terms-modal" class="terms-modal" style="display: none;">
-        <div class="terms-modal-content">
-            <div class="terms-modal-header">
-                <h2><i class="fas fa-file-contract"></i> Terms of Use</h2>
-                <!-- Крестик удалён -->
-            </div>
-            <div class="terms-modal-body">
+    <!-- Terms of Use (без крестика) -->
+    <div class="terms-modal-body">
                 <h3>1. Общие положения</h3>
                 <p>Настоящие Условия использования (далее — «Условия») регулируют отношения между компанией Diamond AI («Компания», «мы», «нас») и любым физическим или юридическим лицом («Пользователь», «вы»), использующим сервис Diamond AI («Сервис»).</p>
                 <p>Используя Сервис, вы полностью и безоговорочно соглашаетесь с настоящими Условиями. Если вы не согласны с каким-либо пунктом, вы обязаны немедленно прекратить использование Сервиса.</p>
@@ -305,3 +298,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+        

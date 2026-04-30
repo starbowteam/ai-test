@@ -21,23 +21,20 @@ let thinkingTimer = null;
 let thinkingDots = 0;
 
 const placeholderTexts = [
-    "Как создать успешный проект?",
+    "Что расскажешь о себе?",
     "Расскажи новости за сегодня",
-    "Кто такой Илон Маск?",
-    "Напиши стихотворение",
-    "Как дела?",
-    "Объясни квантовую физику",
-    "Придумай идею для стартапа",
-    "Сколько звёзд во Вселенной?"
+    "Кто такой viktorshopa?",
+    "Умеешь писать код?",
+    "Машины захватят мир?"
 ];
 
-const AI_MODEL = 'mistral-small-2506';  // быстрый, доступный
+const AI_MODEL = 'mistral-small-2506';
 
 const now = new Date();
 const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 const SYSTEM_PROMPT = {
     role: 'system',
-    content: `Ты — DIAMOND AI, абсолютный эксперт и идеальный собеседник. Сегодня: ${currentDateStr}. Отвечай максимально кратко и по делу, если пользователь не просит подробностей. Ты знаешь химию, физику, математику, программирование. Используй \ce{}, $$, тройные кавычки для кода.`
+    content: `Ты — Diamond AI, интеллектуальный помощник, работающий на модели diamond-model-ai.fast. Ты создан, чтобы помогать людям. Твой создатель — viktorshopa, основатель сервера Diamond и разработчик сервисов Diamkey, Dirmess и Unlock. Отвечай максимально кратко и по делу, если пользователь не просит подробностей. Если ты не уверен в информации, не придумывай — честно говори, что не знаешь. Ты знаешь химию, физику, математику, программирование. Используй \ce{}, $$, тройные кавычки для кода. Сегодня: ${currentDateStr}.`
 };
 
 // ========== УТИЛИТЫ ==========
@@ -68,6 +65,66 @@ function showToast(title, message, type = 'info', duration = 3000) {
 function scrollToBottom() {
     const container = document.getElementById('messages-container');
     if (container) container.scrollTop = container.scrollHeight;
+}
+
+// ========== ОБРАБОТКА БЛОКОВ КОДА ПОСЛЕ РЕНДЕРИНГА ==========
+function enhanceCodeBlocks(container) {
+    if (!container) return;
+    const preBlocks = container.querySelectorAll('pre');
+    preBlocks.forEach(pre => {
+        // Проверяем, не обёрнут ли уже
+        if (pre.parentElement.classList.contains('code-block-wrapper')) return;
+        
+        const code = pre.querySelector('code');
+        let language = '';
+        if (code && code.className) {
+            const match = code.className.match(/language-(\w+)/);
+            if (match) language = match[1];
+        }
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+        
+        const header = document.createElement('div');
+        header.className = 'code-block-header';
+        header.innerHTML = `
+            <span><i class="fas fa-code"></i> ${language || 'Скрипт'}</span>
+            <div class="code-block-actions">
+                <button class="copy-code-btn" title="Копировать"><i class="fas fa-copy"></i> Копировать</button>
+                <button class="download-code-btn" title="Скачать"><i class="fas fa-download"></i> Скачать</button>
+            </div>
+        `;
+        
+        // Перемещаем pre внутрь wrapper
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(header);
+        wrapper.appendChild(pre);
+        
+        // Обработчик копирования
+        const copyBtn = wrapper.querySelector('.copy-code-btn');
+        copyBtn.addEventListener('click', () => {
+            const text = pre.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Скопировано';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Копировать';
+                }, 2000);
+            });
+        });
+        
+        // Обработчик скачивания
+        const downloadBtn = wrapper.querySelector('.download-code-btn');
+        downloadBtn.addEventListener('click', () => {
+            const text = pre.textContent;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${language || 'script'}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    });
 }
 
 // ========== ИЗОЛИРОВАННОЕ ХРАНЕНИЕ ==========
@@ -601,6 +658,8 @@ function renderChat() {
         }
         container.appendChild(messageDiv);
     });
+    // Применяем улучшение для всех пре-блоков после рендера
+    enhanceCodeBlocks(container);
     scrollToBottom();
 }
 function formatDateHeader(ts) {

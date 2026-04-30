@@ -7,7 +7,7 @@ let currentChatId = null;
 let chats = [];
 let folders = [];
 let currentUser = null;
-let mistralApiKey = '';              // Загружается из Supabase
+let mistralApiKey = '';
 let isWaitingForResponse = false;
 let currentAbortController = null;
 let currentStreamingMessageId = null;
@@ -17,8 +17,8 @@ let sidebarCollapsed = false;
 let currentEditingFolderId = null;
 let currentView = 'chat';
 let placeholderInterval = null;
-let thinkingTimer = null;            // Таймер для анимации "Думает"
-let thinkingDots = 0;                // Счётчик точек
+let thinkingTimer = null;
+let thinkingDots = 0;
 
 const placeholderTexts = [
     "Как создать успешный проект?",
@@ -31,8 +31,7 @@ const placeholderTexts = [
     "Сколько звёзд во Вселенной?"
 ];
 
-// Модель Mistral (используем всегда одну, без перебора)
-const AI_MODEL = 'mistralai/mistral-nemo';
+const AI_MODEL = 'mistral-small-2506';  // быстрый, доступный
 
 const now = new Date();
 const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -71,7 +70,7 @@ function scrollToBottom() {
     if (container) container.scrollTop = container.scrollHeight;
 }
 
-// ========== МЕТОДЫ ДЛЯ ИЗОЛИРОВАННОГО ХРАНЕНИЯ ==========
+// ========== ИЗОЛИРОВАННОЕ ХРАНЕНИЕ ==========
 function storageKey(base) {
     return currentUser ? `${base}_${currentUser.login}` : base;
 }
@@ -109,10 +108,7 @@ function loadFoldersForUser() {
 
 // ========== DIAMKEY / SUPABASE ==========
 async function exchangeTicket(ticket) {
-    const headers = {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-    };
+    const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
     try {
         let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
         if (!resp.ok) throw new Error('Ошибка поиска тикета');
@@ -150,7 +146,6 @@ async function exchangeTicket(ticket) {
     }
 }
 
-// Получение API-ключа Mistral из Supabase
 async function fetchMistralKey() {
     try {
         const resp = await fetch(`${SUPABASE_URL}/rest/v1/service_config?id=eq.1`, {
@@ -223,16 +218,18 @@ function updateUserPanel() {
     }
 }
 
-// ========== ИНДИКАТОР "ДУМАЕТ" ==========
-function startThinkingAnimation(messageDiv) {
+// ========== АНИМАЦИЯ "ДУМАЕТ" ==========
+function startThinkingAnimation() {
     if (thinkingTimer) clearInterval(thinkingTimer);
     thinkingDots = 1;
-    const contentDiv = messageDiv.querySelector('.message-content');
-    contentDiv.innerHTML = 'Думает';
-    thinkingTimer = setInterval(() => {
-        thinkingDots = thinkingDots === 3 ? 1 : thinkingDots + 1;
-        contentDiv.innerHTML = 'Думает' + '.'.repeat(thinkingDots);
-    }, 500);
+    const typingEl = document.querySelector('.message.assistant.typing .message-content');
+    if (typingEl) {
+        typingEl.innerHTML = 'Думает';
+        thinkingTimer = setInterval(() => {
+            thinkingDots = thinkingDots === 3 ? 1 : thinkingDots + 1;
+            typingEl.innerHTML = 'Думает' + '.'.repeat(thinkingDots);
+        }, 500);
+    }
 }
 
 function stopThinkingAnimation() {
@@ -313,11 +310,11 @@ function renderFoldersPage() {
         </div>
     `;
 
-    document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
+    document.getElementById('create-folder-page-btn').addEventListener('click', () => {
         currentEditingFolderId = null;
         showFolderEditModal(null);
     });
-    document.getElementById('back-to-chat-from-folders')?.addEventListener('click', switchToChatView);
+    document.getElementById('back-to-chat-from-folders').addEventListener('click', switchToChatView);
 
     const listContainer = document.getElementById('foldersListContainer');
     if (folders.length === 0) {
@@ -365,7 +362,7 @@ function showFolderEditModal(folder = null) {
     modal.className = 'folder-edit-modal';
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
     const content = document.createElement('div');
-    content.className = 'folder-edit-content';
+    content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border-color);';
     const isEdit = folder !== null;
     content.innerHTML = `
         <h3 style="margin-bottom:16px;">${isEdit ? 'Редактировать папку' : 'Создать папку'}</h3>
@@ -383,7 +380,7 @@ function showFolderEditModal(folder = null) {
         </div>
         <div class="form-group">
             <label>Цвет</label>
-            <div class="color-selector">
+            <div class="color-selector" id="color-selector">
                 <div class="color-option" data-color="#e74c3c" style="background:#e74c3c"></div>
                 <div class="color-option" data-color="#f39c12" style="background:#f39c12"></div>
                 <div class="color-option" data-color="#2ecc71" style="background:#2ecc71"></div>
@@ -411,8 +408,7 @@ function showFolderEditModal(folder = null) {
     });
 
     if (isEdit) {
-        const colorOpts = content.querySelectorAll('.color-option');
-        colorOpts.forEach(opt => {
+        content.querySelectorAll('.color-option').forEach(opt => {
             if (opt.dataset.color === folder.color) opt.classList.add('selected');
             else opt.classList.remove('selected');
         });
@@ -479,7 +475,7 @@ function showFolderSelectModal(chatId) {
     const modal = document.createElement('div'); modal.className = 'folder-modal-temp';
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
     const content = document.createElement('div');
-    content.className = 'folder-chats-content'; // Используем стилизованное окно
+    content.className = 'folder-chats-content';
     content.innerHTML = `
         <div class="folder-chats-header">
             <h3>Выбрать папку</h3>
@@ -669,10 +665,7 @@ async function sendMessage() {
     chat.messages.push(typingMsg);
     renderChat();
     scrollToBottom();
-
-    // Запускаем анимацию "Думает." на созданном элементе
-    const typingElement = document.querySelector(`.message.assistant.typing .message-content`);
-    if (typingElement) startThinkingAnimation(typingElement.parentElement.parentElement);
+    startThinkingAnimation();
 
     const contextMessages = chat.messages.filter(m => !m.isTyping).slice(-15).map(m => ({ role: m.role, content: m.content }));
     const messages = [SYSTEM_PROMPT, ...contextMessages];
@@ -694,7 +687,7 @@ async function sendMessage() {
             success = true;
         }
     } catch (e) {
-        if (e.name === 'AbortError') { /* остановлено */ }
+        if (e.name === 'AbortError') { /* отменено */ }
         else console.warn('Mistral error:', e);
     }
 
@@ -901,19 +894,14 @@ function setupEventListeners() {
     document.addEventListener('click', (e) => {
         if (!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show');
     });
-
-    // Обработчик для удалённой кнопки stop не нужен
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 (async function() {
     log('Загрузка...');
 
-    // Загружаем API-ключ из Supabase
     const keyLoaded = await fetchMistralKey();
-    if (!keyLoaded) {
-        console.warn('Не удалось загрузить API-ключ из Supabase');
-    }
+    if (!keyLoaded) console.warn('Не удалось загрузить API-ключ из Supabase');
 
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {

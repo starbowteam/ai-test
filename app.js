@@ -6,8 +6,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let currentChatId = null;
 let chats = [];
 let folders = [];
-let currentUser = null;               // { login, secretWord, name, avatar, fa_icon, ... }
-let userApiKey = '';                  // OpenRouter API-ключ
+let currentUser = null;
+let mistralApiKey = '';              // Загружается из Supabase
 let isWaitingForResponse = false;
 let currentAbortController = null;
 let currentStreamingMessageId = null;
@@ -17,6 +17,9 @@ let sidebarCollapsed = false;
 let currentEditingFolderId = null;
 let currentView = 'chat';
 let placeholderInterval = null;
+let thinkingTimer = null;            // Таймер для анимации "Думает"
+let thinkingDots = 0;                // Счётчик точек
+
 const placeholderTexts = [
     "Как создать успешный проект?",
     "Расскажи новости за сегодня",
@@ -28,12 +31,8 @@ const placeholderTexts = [
     "Сколько звёзд во Вселенной?"
 ];
 
-// Бесплатные рабочие модели (проверены)
-const PRIORITY_MODELS = [
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'google/gemini-flash-1.5-8b-exp:free',
-    'undi95/toppy-m-7b:nitro'
-];
+// Модель Mistral (используем всегда одну, без перебора)
+const AI_MODEL = 'mistralai/mistral-nemo';
 
 const now = new Date();
 const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -151,12 +150,23 @@ async function exchangeTicket(ticket) {
     }
 }
 
-function loadUserApiKey(login) {
-    return localStorage.getItem(`openrouter_key_${login}`) || '';
-}
-function saveUserApiKey(login, key) {
-    localStorage.setItem(`openrouter_key_${login}`, key);
-    userApiKey = key;
+// Получение API-ключа Mistral из Supabase
+async function fetchMistralKey() {
+    try {
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/service_config?id=eq.1`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+        if (!resp.ok) return false;
+        const data = await resp.json();
+        if (data && data.length > 0) {
+            mistralApiKey = data[0].mistral_api_key;
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.error('Ошибка загрузки API-ключа:', e);
+        return false;
+    }
 }
 
 async function processDiamkeyReturn() {
@@ -167,7 +177,6 @@ async function processDiamkeyReturn() {
         const user = await exchangeTicket(ticket);
         currentUser = user;
         localStorage.setItem('diamond_user', JSON.stringify(user));
-        userApiKey = loadUserApiKey(user.login);
         loadChatsForUser();
         loadFoldersForUser();
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -180,7 +189,7 @@ async function processDiamkeyReturn() {
 
 function logout() {
     currentUser = null;
-    userApiKey = '';
+    mistralApiKey = '';
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
@@ -188,7 +197,7 @@ function logout() {
     showToast('Вы вышли', '', 'info');
 }
 
-// ========== АВАТАРЫ (из DiamKey) ==========
+// ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
     const url = 'bot-av.ico';
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
@@ -211,6 +220,25 @@ function updateUserPanel() {
     } else {
         if (nameSpan) nameSpan.textContent = 'Пользователь';
         if (avatarImg) avatarImg.src = '';
+    }
+}
+
+// ========== ИНДИКАТОР "ДУМАЕТ" ==========
+function startThinkingAnimation(messageDiv) {
+    if (thinkingTimer) clearInterval(thinkingTimer);
+    thinkingDots = 1;
+    const contentDiv = messageDiv.querySelector('.message-content');
+    contentDiv.innerHTML = 'Думает';
+    thinkingTimer = setInterval(() => {
+        thinkingDots = thinkingDots === 3 ? 1 : thinkingDots + 1;
+        contentDiv.innerHTML = 'Думает' + '.'.repeat(thinkingDots);
+    }, 500);
+}
+
+function stopThinkingAnimation() {
+    if (thinkingTimer) {
+        clearInterval(thinkingTimer);
+        thinkingTimer = null;
     }
 }
 
@@ -285,7 +313,6 @@ function renderFoldersPage() {
         </div>
     `;
 
-    // Вешаем обработчики после рендера
     document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
         currentEditingFolderId = null;
         showFolderEditModal(null);
@@ -313,14 +340,11 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
-    // Обработчики кнопок внутри карточек папок
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const folderId = btn.dataset.id;
         const folder = folders.find(f => f.id === folderId);
-        if (folder) {
-            showFolderChatsModal(folder);
-        }
+        if (folder) showFolderChatsModal(folder);
     });
 
     document.querySelectorAll('.edit-folder').forEach(btn => btn.onclick = (e) => {
@@ -341,7 +365,7 @@ function showFolderEditModal(folder = null) {
     modal.className = 'folder-edit-modal';
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
     const content = document.createElement('div');
-    content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border-color);';
+    content.className = 'folder-edit-content';
     const isEdit = folder !== null;
     content.innerHTML = `
         <h3 style="margin-bottom:16px;">${isEdit ? 'Редактировать папку' : 'Создать папку'}</h3>
@@ -359,7 +383,7 @@ function showFolderEditModal(folder = null) {
         </div>
         <div class="form-group">
             <label>Цвет</label>
-            <div class="color-selector" id="color-selector">
+            <div class="color-selector">
                 <div class="color-option" data-color="#e74c3c" style="background:#e74c3c"></div>
                 <div class="color-option" data-color="#f39c12" style="background:#f39c12"></div>
                 <div class="color-option" data-color="#2ecc71" style="background:#2ecc71"></div>
@@ -378,7 +402,6 @@ function showFolderEditModal(folder = null) {
     modal.appendChild(content);
     document.body.appendChild(modal);
 
-    // Заполняем иконки
     const iconSel = content.querySelector('#icon-selector');
     const icons = ['fa-folder', 'fa-folder-open', 'fa-book', 'fa-graduation-cap', 'fa-code', 'fa-music', 'fa-image', 'fa-video', 'fa-gamepad', 'fa-shopping-cart', 'fa-heart', 'fa-star', 'fa-rocket', 'fa-brain', 'fa-chart-line', 'fa-users', 'fa-calendar', 'fa-clock', 'fa-tag', 'fa-tasks'];
     iconSel.innerHTML = icons.map(icon => `<div class="icon-option${isEdit && folder.icon === icon ? ' selected' : ''}" data-icon="${icon}"><i class="fas ${icon}"></i></div>`).join('');
@@ -387,7 +410,6 @@ function showFolderEditModal(folder = null) {
         opt.classList.add('selected');
     });
 
-    // Выбираем цвет (если редактирование)
     if (isEdit) {
         const colorOpts = content.querySelectorAll('.color-option');
         colorOpts.forEach(opt => {
@@ -408,15 +430,11 @@ function showFolderEditModal(folder = null) {
         const icon = selectedIcon ? selectedIcon.dataset.icon : 'fa-folder';
         const selectedColor = content.querySelector('.color-option.selected');
         const color = selectedColor ? selectedColor.dataset.color : '#95a5a6';
-        if (isEdit) {
-            updateFolder(folder.id, name, desc, icon, color);
-        } else {
-            createFolder(name, desc, icon, color);
-        }
+        if (isEdit) updateFolder(folder.id, name, desc, icon, color);
+        else createFolder(name, desc, icon, color);
         modal.remove();
     };
     content.querySelector('#cancel-folder-btn').onclick = () => modal.remove();
-    // Закрытие по оверлею
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
@@ -461,24 +479,37 @@ function showFolderSelectModal(chatId) {
     const modal = document.createElement('div'); modal.className = 'folder-modal-temp';
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
     const content = document.createElement('div');
-    content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 20px; min-width: 300px; max-width: 420px; border:1px solid var(--border-color);';
+    content.className = 'folder-chats-content'; // Используем стилизованное окно
     content.innerHTML = `
-        <h3 style="margin-bottom:16px;">Выбрать папку</h3>
-        <div style="max-height:300px; overflow-y:auto;" id="folder-options-list"></div>
-        <button id="create-folder-from-select" style="margin-top:12px;" class="btn btn-secondary">+ Новая папка</button>
-        <button id="close-folder-select" class="btn btn-secondary">Отмена</button>
+        <div class="folder-chats-header">
+            <h3>Выбрать папку</h3>
+            <button class="close-chats-btn" style="background:transparent; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        <div class="folder-chats-list" id="folder-options-list">
+            <div class="folder-chat-item" data-id="">
+                <i class="fas fa-times-circle"></i>
+                <span>Без папки</span>
+            </div>
+            ${folders.map(f => `
+                <div class="folder-chat-item" data-id="${f.id}">
+                    <i class="fas ${f.icon}" style="color:${f.color}"></i>
+                    <span>${escapeHtml(f.name)}</span>
+                </div>
+            `).join('')}
+        </div>
     `;
-    modal.appendChild(content); document.body.appendChild(modal);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
 
-    const listDiv = content.querySelector('#folder-options-list');
-    listDiv.innerHTML = `<div class="folder-option" data-id=""><i class="fas fa-times-circle"></i> Без папки</div>` +
-        folders.map(f => `<div class="folder-option" data-id="${f.id}"><i class="fas ${f.icon}" style="color:${f.color}"></i> ${escapeHtml(f.name)}</div>`).join('');
-    listDiv.querySelectorAll('.folder-option').forEach(opt => opt.onclick = () => {
-        moveChatToFolder(chatId, opt.dataset.id || null);
-        modal.remove();
+    content.querySelector('.close-chats-btn').onclick = () => modal.remove();
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    content.querySelectorAll('.folder-chat-item').forEach(item => {
+        item.onclick = () => {
+            moveChatToFolder(chatId, item.dataset.id || null);
+            modal.remove();
+        };
     });
-    content.querySelector('#create-folder-from-select').onclick = () => { modal.remove(); switchToFoldersView(); };
-    content.querySelector('#close-folder-select').onclick = () => modal.remove();
 }
 
 // ========== ИСТОРИЯ ==========
@@ -548,7 +579,7 @@ function renderChat() {
         messageDiv.innerHTML = `
             <div class="avatar">${avatarHTML}</div>
             <div class="message-content-wrapper">
-                <div class="message-content">${rawContent}</div>
+                <div class="message-content">${msg.isTyping ? 'Думает' : rawContent}</div>
                 <div class="message-time">${formatTime(msg.timestamp || Date.now())}</div>
             </div>`;
         if (msg.role === 'assistant' && msg.id !== currentStreamingMessageId && !msg.isTyping) {
@@ -594,7 +625,7 @@ function addMessageToDOM(role, content, save = true) {
         const chat = chats.find(c => c.id === currentChatId);
         if (chat) {
             if (!chat.messages) chat.messages = [];
-            chat.messages.push({ id: messageId, role, content, timestamp });
+            chat.messages.push({ id: messageId, role, content, timestamp, isTyping: false });
             chat.lastActivity = timestamp;
             if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1) chat.title = generateChatTitle(content);
             saveChats();
@@ -609,8 +640,8 @@ function addMessageToDOM(role, content, save = true) {
 async function sendMessage() {
     const text = document.getElementById('user-input').value.trim();
     if (!text || isWaitingForResponse) return;
-    if (!userApiKey) {
-        showToast('Ошибка', 'Сначала введите API-ключ OpenRouter', 'warning');
+    if (!mistralApiKey) {
+        showToast('Ошибка', 'API-ключ не загружен', 'error');
         return;
     }
 
@@ -632,12 +663,16 @@ async function sendMessage() {
     updateSendButtonState();
     isWaitingForResponse = true;
     updateSendButtonState();
-    document.getElementById('stop-btn').style.display = 'flex';
 
     const typingId = Date.now().toString();
-    chat.messages.push({ id: typingId, role: 'assistant', content: '...', isTyping: true });
+    const typingMsg = { id: typingId, role: 'assistant', content: '', isTyping: true, timestamp: Date.now() };
+    chat.messages.push(typingMsg);
     renderChat();
     scrollToBottom();
+
+    // Запускаем анимацию "Думает." на созданном элементе
+    const typingElement = document.querySelector(`.message.assistant.typing .message-content`);
+    if (typingElement) startThinkingAnimation(typingElement.parentElement.parentElement);
 
     const contextMessages = chat.messages.filter(m => !m.isTyping).slice(-15).map(m => ({ role: m.role, content: m.content }));
     const messages = [SYSTEM_PROMPT, ...contextMessages];
@@ -645,26 +680,25 @@ async function sendMessage() {
     currentAbortController = controller;
     let success = false;
     let assistantMessage = '';
-    const modelsToTry = [...PRIORITY_MODELS];
 
-    for (const model of modelsToTry) {
-        if (success) break;
-        try {
-            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userApiKey}` },
-                body: JSON.stringify({ model, messages, temperature: 0.5, max_tokens: 2000 }),
-                signal: controller.signal
-            });
-            if (!resp.ok) continue;
+    try {
+        const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralApiKey}` },
+            body: JSON.stringify({ model: AI_MODEL, messages, temperature: 0.5, max_tokens: 2000 }),
+            signal: controller.signal
+        });
+        if (resp.ok) {
             const data = await resp.json();
             assistantMessage = data.choices[0].message.content;
             success = true;
-        } catch (e) {
-            if (e.name === 'AbortError') break;
-            console.warn('Model fail:', model, e);
         }
+    } catch (e) {
+        if (e.name === 'AbortError') { /* остановлено */ }
+        else console.warn('Mistral error:', e);
     }
+
+    stopThinkingAnimation();
 
     const msgIndex = chat.messages.findIndex(m => m.id === typingId);
     if (msgIndex !== -1) chat.messages.splice(msgIndex, 1);
@@ -672,13 +706,12 @@ async function sendMessage() {
     if (success) {
         addMessageToDOM('assistant', assistantMessage, true);
     } else {
-        addMessageToDOM('assistant', '❌ Не удалось получить ответ. Проверьте ключ или повторите позже.', true);
+        addMessageToDOM('assistant', '❌ Не удалось получить ответ. Попробуйте позже.', true);
     }
 
     isWaitingForResponse = false;
     currentAbortController = null;
     updateSendButtonState();
-    document.getElementById('stop-btn').style.display = 'none';
     renderChat();
     scrollToBottom();
 }
@@ -686,6 +719,7 @@ async function sendMessage() {
 function stopGeneration() {
     if (currentAbortController) {
         currentAbortController.abort();
+        stopThinkingAnimation();
         showToast('Генерация остановлена', '', 'info');
     }
 }
@@ -714,55 +748,6 @@ function setupDiamkeyButton() {
         const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
         const appName = encodeURIComponent('Diamond AI');
         window.location.href = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
-    };
-}
-
-// ========== МОДАЛКА API-КЛЮЧА ==========
-function setupApiKeyModal() {
-    const modal = document.createElement('div');
-    modal.className = 'apikey-modal';
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2000;';
-    modal.innerHTML = `
-        <div class="apikey-modal-content">
-            <div class="apikey-modal-header">
-                <h3><i class="fas fa-key"></i> API-ключ OpenRouter</h3>
-                <button class="close-modal" id="close-apikey-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="apikey-modal-body">
-                <input type="password" id="apikey-input" placeholder="sk-or-v1-..." style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white;">
-                <p style="font-size:12px; color: var(--text-secondary); margin-top:8px;">Ключ сохраняется для вашего Diamkey-аккаунта</p>
-            </div>
-            <div class="apikey-modal-footer" style="display:flex; gap:12px; margin-top:20px;">
-                <button id="save-apikey-btn" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
-                <button id="cancel-apikey-btn" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.style.display = 'none';
-    modal.id = 'apikey-modal';
-
-    const saveBtn = modal.querySelector('#save-apikey-btn');
-    const cancelBtn = modal.querySelector('#cancel-apikey-btn');
-    const closeBtn = modal.querySelector('#close-apikey-modal');
-    const input = modal.querySelector('#apikey-input');
-
-    saveBtn.onclick = () => {
-        const key = input.value.trim();
-        if (!key) { showToast('Ошибка', 'Введите ключ', 'warning'); return; }
-        if (!currentUser) { showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error'); return; }
-        saveUserApiKey(currentUser.login, key);
-        modal.style.display = 'none';
-        showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
-    };
-    cancelBtn.onclick = () => modal.style.display = 'none';
-    closeBtn.onclick = () => modal.style.display = 'none';
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-
-    // Экспортируем функцию показа
-    window.showApiKeyModal = () => {
-        modal.style.display = 'flex';
-        input.value = userApiKey || '';
     };
 }
 
@@ -857,7 +842,7 @@ function renderEmptyState() {
         emptyInput.oninput = function() {
             emptySendBtn.disabled = !this.value.trim();
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 160) + 'px';
         };
         emptyInput.onkeydown = e => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -906,9 +891,9 @@ function setupEventListeners() {
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
 
-    // Дропдаун пользователя
     document.getElementById('dropdown-discord')?.addEventListener('click', () => window.open('https://discord.gg/diamondshop', '_blank'));
     document.getElementById('dropdown-logout')?.addEventListener('click', logout);
+
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('userDropdown').classList.toggle('show');
@@ -917,20 +902,22 @@ function setupEventListeners() {
         if (!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show');
     });
 
-    document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
-    document.getElementById('dropdown-api-key')?.addEventListener('click', () => {
-        if (window.showApiKeyModal) window.showApiKeyModal();
-    });
+    // Обработчик для удалённой кнопки stop не нужен
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 (async function() {
     log('Загрузка...');
 
+    // Загружаем API-ключ из Supabase
+    const keyLoaded = await fetchMistralKey();
+    if (!keyLoaded) {
+        console.warn('Не удалось загрузить API-ключ из Supabase');
+    }
+
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        userApiKey = loadUserApiKey(currentUser.login);
         loadChatsForUser();
         loadFoldersForUser();
     } else {
@@ -949,7 +936,6 @@ function setupEventListeners() {
     }
 
     setupEventListeners();
-    setupApiKeyModal();
     updateUserPanel();
     updateSendButtonState();
     if (chats.length) renderHistory();
@@ -962,7 +948,4 @@ function afterLogin() {
     setTimeout(() => document.getElementById('mainUI').classList.add('visible'), 50);
     updateUserPanel();
     if (chats.length === 0) renderEmptyState(); else renderChat();
-    if (!userApiKey) {
-        showToast('Введите API-ключ', 'OpenRouter ключ нужен для работы AI', 'warning', 5000);
-    }
 }

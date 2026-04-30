@@ -66,8 +66,12 @@ function showToast(title, message, type = 'info', duration = 3000) {
     toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
     setTimeout(() => toast.remove(), duration);
 }
+function scrollToBottom() {
+    const container = document.getElementById('messages-container');
+    if (container) container.scrollTop = container.scrollHeight;
+}
 
-// ========== ХРАНЕНИЕ, ПРИВЯЗАННОЕ К АККАУНТУ ==========
+// ========== МЕТОДЫ ДЛЯ ИЗОЛИРОВАННОГО ХРАНЕНИЯ ==========
 function storageKey(base) {
     return currentUser ? `${base}_${currentUser.login}` : base;
 }
@@ -179,11 +183,11 @@ function logout() {
     localStorage.removeItem('diamond_user');
     document.getElementById('mainUI').style.display = 'none';
     document.getElementById('choiceScreen').style.display = 'flex';
-    setupDiamkeyButton(); // переустанавливаем кнопку
+    setupDiamkeyButton();
     showToast('Вы вышли', '', 'info');
 }
 
-// ========== АВАТАРЫ ==========
+// ========== АВАТАРЫ (из DiamKey, без локального изменения) ==========
 function getBotAvatarHTML() {
     const url = 'bot-av.ico';
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
@@ -288,7 +292,6 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
-    // клик по чатам в папке — сразу переключаемся
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
@@ -590,8 +593,14 @@ function setupApiKeyModal() {
     if (saveBtn) {
         saveBtn.onclick = () => {
             const key = input.value.trim();
-            if (!key) { showToast('Ошибка', 'Введите ключ', 'warning'); return; }
-            if (!currentUser) { showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error'); return; }
+            if (!key) {
+                showToast('Ошибка', 'Введите ключ', 'warning');
+                return;
+            }
+            if (!currentUser) {
+                showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error');
+                return;
+            }
             saveUserApiKey(currentUser.login, key);
             document.getElementById('apikey-modal').style.display = 'none';
             showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
@@ -742,7 +751,6 @@ async function showLoadingScreen() {
 
 // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
 function setupEventListeners() {
-    // Закрытие модалок по клику на оверлей
     window.onclick = e => {
         if (e.target === document.getElementById('avatar-modal')) document.getElementById('avatar-modal').style.display = 'none';
         if (e.target === document.getElementById('folder-edit-modal')) document.getElementById('folder-edit-modal').style.display = 'none';
@@ -752,21 +760,14 @@ function setupEventListeners() {
         if (e.target === document.getElementById('rename-user-modal')) document.getElementById('rename-user-modal').style.display = 'none';
     };
 
-    // Основные кнопки
     document.getElementById('sidebarToggleBtn')?.addEventListener('click', toggleSidebar);
     document.getElementById('new-chat-btn')?.addEventListener('click', createNewChat);
     document.getElementById('folders-page-btn')?.addEventListener('click', switchToFoldersView);
     document.getElementById('genhab-page-btn')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
-
-    // Компактные кнопки в свёрнутом меню
     document.getElementById('collapsedNewChat')?.addEventListener('click', createNewChat);
     document.getElementById('collapsedFolders')?.addEventListener('click', switchToFoldersView);
     document.getElementById('collapsedGenhab')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
-
-    // Кнопка Назад к чату из папок
     document.getElementById('back-to-chat-from-folders')?.addEventListener('click', switchToChatView);
-
-    // Создание папки
     document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
         currentEditingFolderId = null;
         document.getElementById('folder-edit-title').innerText = 'Создать папку';
@@ -775,8 +776,6 @@ function setupEventListeners() {
         setupFoldersUI();
         document.getElementById('folder-edit-modal').style.display = 'flex';
     });
-
-    // Сохранение папки
     document.getElementById('save-folder-btn')?.addEventListener('click', () => {
         const name = document.getElementById('folder-name').value.trim();
         if (!name) { showToast('Ошибка', 'Введите название', 'warning'); return; }
@@ -790,12 +789,9 @@ function setupEventListeners() {
         document.getElementById('folder-edit-modal').style.display = 'none';
         currentEditingFolderId = null;
     });
-
     document.getElementById('cancel-folder-edit-btn')?.addEventListener('click', () => document.getElementById('folder-edit-modal').style.display = 'none');
     document.getElementById('close-folder-edit-modal')?.addEventListener('click', () => document.getElementById('folder-edit-modal').style.display = 'none');
     document.getElementById('close-folder-chats-modal')?.addEventListener('click', () => document.getElementById('folder-chats-modal').style.display = 'none');
-
-    // Ввод сообщения
     document.getElementById('user-input')?.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
@@ -807,19 +803,15 @@ function setupEventListeners() {
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
 
-    // Выпадающее меню пользователя
     document.getElementById('dropdown-discord')?.addEventListener('click', () => window.open('https://discord.gg/diamondshop', '_blank'));
     document.getElementById('dropdown-terms')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'flex');
     document.getElementById('dropdown-privacy')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'flex');
     document.getElementById('dropdown-logout')?.addEventListener('click', logout);
-
-    // Закрытие модалок (кнопки и крестики)
     document.getElementById('close-terms-modal')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'none');
     document.getElementById('close-privacy-modal')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'none');
     document.getElementById('close-terms-btn')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'none');
     document.getElementById('close-privacy-btn')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'none');
 
-    // Меню пользователя (три точки)
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('userDropdown').classList.toggle('show');
@@ -828,10 +820,7 @@ function setupEventListeners() {
         if (!document.getElementById('userPanel')?.contains(e.target)) document.getElementById('userDropdown')?.classList.remove('show');
     });
 
-    // Стоп-кнопка генерации
     document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
-
-    // API-ключ
     document.getElementById('dropdown-api-key')?.addEventListener('click', () => {
         document.getElementById('apikey-modal').style.display = 'flex';
         document.getElementById('apikey-input').value = userApiKey || '';
@@ -842,7 +831,6 @@ function setupEventListeners() {
 (async function() {
     log('Загрузка...');
 
-    // Проверяем сохранённого пользователя
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -856,9 +844,7 @@ function setupEventListeners() {
 
     await showLoadingScreen();
 
-    // Обрабатываем возврат с DiamKey
     const ticketProcessed = await processDiamkeyReturn();
-
     if (currentUser && (ticketProcessed || !window.location.search.includes('ticket'))) {
         afterLogin();
     } else if (!currentUser) {

@@ -28,10 +28,11 @@ const placeholderTexts = [
     "Сколько звёзд во Вселенной?"
 ];
 
+// Бесплатные рабочие модели (проверены)
 const PRIORITY_MODELS = [
-    'openai/gpt-3.5-turbo',
-    'anthropic/claude-3-haiku',
-    'google/gemini-flash-1.5'
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemini-flash-1.5-8b-exp:free',
+    'undi95/toppy-m-7b:nitro'
 ];
 
 const now = new Date();
@@ -187,7 +188,7 @@ function logout() {
     showToast('Вы вышли', '', 'info');
 }
 
-// ========== АВАТАРЫ (из DiamKey, без локального изменения) ==========
+// ========== АВАТАРЫ (из DiamKey) ==========
 function getBotAvatarHTML() {
     const url = 'bot-av.ico';
     return `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.style.display='none'; this.nextSibling?.style.display='flex';"><i class="fas fa-gem" style="display:none;"></i>`;
@@ -270,13 +271,33 @@ function moveChatToFolder(chatId, folderId) {
 }
 
 function renderFoldersPage() {
-    const container = document.getElementById('foldersListContainer');
+    const container = document.getElementById('foldersPage');
     if (!container) return;
+    container.innerHTML = `
+        <div class="folders-page-header">
+            <h1><i class="fas fa-folder"></i> Папки</h1>
+            <p>Организуйте чаты по папкам</p>
+        </div>
+        <div class="folders-list-container" id="foldersListContainer"></div>
+        <div class="folders-page-footer">
+            <button id="create-folder-page-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Создать папку</button>
+            <button id="back-to-chat-from-folders" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Назад к чату</button>
+        </div>
+    `;
+
+    // Вешаем обработчики после рендера
+    document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
+        currentEditingFolderId = null;
+        showFolderEditModal(null);
+    });
+    document.getElementById('back-to-chat-from-folders')?.addEventListener('click', switchToChatView);
+
+    const listContainer = document.getElementById('foldersListContainer');
     if (folders.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">У вас пока нет папок. Создайте первую!</div>';
+        listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">У вас пока нет папок. Создайте первую!</div>';
         return;
     }
-    container.innerHTML = folders.map(f => `
+    listContainer.innerHTML = folders.map(f => `
         <div class="folder-card" data-id="${f.id}">
             <div class="folder-icon" style="background:${f.color}20; color:${f.color}"><i class="fas ${f.icon}"></i></div>
             <div class="folder-info">
@@ -292,19 +313,13 @@ function renderFoldersPage() {
         </div>
     `).join('');
 
+    // Обработчики кнопок внутри карточек папок
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
-        const id = btn.dataset.id;
-        const folder = folders.find(f => f.id === id);
+        const folderId = btn.dataset.id;
+        const folder = folders.find(f => f.id === folderId);
         if (folder) {
-            const chatsIn = chats.filter(c => c.folderId === id);
-            if (chatsIn.length > 0) {
-                switchChat(chatsIn[0].id);
-                switchToChatView();
-                showToast('Чат открыт', `Папка: ${folder.name}`, 'success');
-            } else {
-                showToast('Пусто', 'В этой папке нет чатов', 'info');
-            }
+            showFolderChatsModal(folder);
         }
     });
 
@@ -312,16 +327,133 @@ function renderFoldersPage() {
         e.stopPropagation();
         currentEditingFolderId = btn.dataset.id;
         const f = folders.find(f => f.id === currentEditingFolderId);
-        document.getElementById('folder-edit-title').innerText = 'Редактировать папку';
-        document.getElementById('folder-name').value = f.name;
-        document.getElementById('folder-description').value = f.description || '';
-        setupFoldersUI();
-        document.getElementById('folder-edit-modal').style.display = 'flex';
+        showFolderEditModal(f);
     });
 
     document.querySelectorAll('.delete-folder').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         deleteFolder(btn.dataset.id);
+    });
+}
+
+function showFolderEditModal(folder = null) {
+    const modal = document.createElement('div');
+    modal.className = 'folder-edit-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
+    const content = document.createElement('div');
+    content.style.cssText = 'background: var(--bg-secondary); border-radius: 28px; padding: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border-color);';
+    const isEdit = folder !== null;
+    content.innerHTML = `
+        <h3 style="margin-bottom:16px;">${isEdit ? 'Редактировать папку' : 'Создать папку'}</h3>
+        <div class="form-group">
+            <label>Название</label>
+            <input type="text" id="folder-name" placeholder="Название папки" value="${isEdit ? escapeHtml(folder.name) : ''}">
+        </div>
+        <div class="form-group">
+            <label>Описание</label>
+            <textarea id="folder-description" rows="2" placeholder="Описание папки">${isEdit ? escapeHtml(folder.description || '') : ''}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Иконка</label>
+            <div class="icon-selector" id="icon-selector"></div>
+        </div>
+        <div class="form-group">
+            <label>Цвет</label>
+            <div class="color-selector" id="color-selector">
+                <div class="color-option" data-color="#e74c3c" style="background:#e74c3c"></div>
+                <div class="color-option" data-color="#f39c12" style="background:#f39c12"></div>
+                <div class="color-option" data-color="#2ecc71" style="background:#2ecc71"></div>
+                <div class="color-option" data-color="#3498db" style="background:#3498db"></div>
+                <div class="color-option" data-color="#9b59b6" style="background:#9b59b6"></div>
+                <div class="color-option" data-color="#1abc9c" style="background:#1abc9c"></div>
+                <div class="color-option" data-color="#e67e22" style="background:#e67e22"></div>
+                <div class="color-option" data-color="#95a5a6" style="background:#95a5a6"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+            <button id="save-folder-btn" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+            <button id="cancel-folder-btn" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</button>
+        </div>
+    `;
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    // Заполняем иконки
+    const iconSel = content.querySelector('#icon-selector');
+    const icons = ['fa-folder', 'fa-folder-open', 'fa-book', 'fa-graduation-cap', 'fa-code', 'fa-music', 'fa-image', 'fa-video', 'fa-gamepad', 'fa-shopping-cart', 'fa-heart', 'fa-star', 'fa-rocket', 'fa-brain', 'fa-chart-line', 'fa-users', 'fa-calendar', 'fa-clock', 'fa-tag', 'fa-tasks'];
+    iconSel.innerHTML = icons.map(icon => `<div class="icon-option${isEdit && folder.icon === icon ? ' selected' : ''}" data-icon="${icon}"><i class="fas ${icon}"></i></div>`).join('');
+    iconSel.querySelectorAll('.icon-option').forEach(opt => opt.onclick = () => {
+        iconSel.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+    });
+
+    // Выбираем цвет (если редактирование)
+    if (isEdit) {
+        const colorOpts = content.querySelectorAll('.color-option');
+        colorOpts.forEach(opt => {
+            if (opt.dataset.color === folder.color) opt.classList.add('selected');
+            else opt.classList.remove('selected');
+        });
+    }
+    content.querySelectorAll('.color-option').forEach(opt => opt.onclick = () => {
+        content.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+    });
+
+    content.querySelector('#save-folder-btn').onclick = () => {
+        const name = content.querySelector('#folder-name').value.trim();
+        if (!name) { showToast('Ошибка', 'Введите название', 'warning'); return; }
+        const desc = content.querySelector('#folder-description').value;
+        const selectedIcon = content.querySelector('.icon-option.selected');
+        const icon = selectedIcon ? selectedIcon.dataset.icon : 'fa-folder';
+        const selectedColor = content.querySelector('.color-option.selected');
+        const color = selectedColor ? selectedColor.dataset.color : '#95a5a6';
+        if (isEdit) {
+            updateFolder(folder.id, name, desc, icon, color);
+        } else {
+            createFolder(name, desc, icon, color);
+        }
+        modal.remove();
+    };
+    content.querySelector('#cancel-folder-btn').onclick = () => modal.remove();
+    // Закрытие по оверлею
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
+function showFolderChatsModal(folder) {
+    const chatsIn = chats.filter(c => c.folderId === folder.id);
+    const modal = document.createElement('div');
+    modal.className = 'folder-chats-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
+    const content = document.createElement('div');
+    content.className = 'folder-chats-content';
+    content.innerHTML = `
+        <div class="folder-chats-header">
+            <h3>Чаты в папке «${escapeHtml(folder.name)}»</h3>
+            <button class="close-chats-btn" style="background:transparent; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        <div class="folder-chats-list">
+            ${chatsIn.length ? chatsIn.map(c => `
+                <div class="folder-chat-item" data-chat-id="${c.id}">
+                    <i class="fas fa-comment"></i>
+                    <span>${escapeHtml(c.title)}</span>
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            `).join('') : '<div style="text-align:center; padding:20px; color:var(--text-secondary);">Нет чатов</div>'}
+        </div>
+    `;
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    content.querySelector('.close-chats-btn').onclick = () => modal.remove();
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    content.querySelectorAll('.folder-chat-item').forEach(item => {
+        item.onclick = () => {
+            switchChat(item.dataset.chatId);
+            switchToChatView();
+            modal.remove();
+        };
     });
 }
 
@@ -587,28 +719,51 @@ function setupDiamkeyButton() {
 
 // ========== МОДАЛКА API-КЛЮЧА ==========
 function setupApiKeyModal() {
-    const saveBtn = document.getElementById('save-apikey-btn');
-    const cancelBtn = document.getElementById('cancel-apikey-btn');
-    const input = document.getElementById('apikey-input');
-    if (saveBtn) {
-        saveBtn.onclick = () => {
-            const key = input.value.trim();
-            if (!key) {
-                showToast('Ошибка', 'Введите ключ', 'warning');
-                return;
-            }
-            if (!currentUser) {
-                showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error');
-                return;
-            }
-            saveUserApiKey(currentUser.login, key);
-            document.getElementById('apikey-modal').style.display = 'none';
-            showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
-        };
-    }
-    if (cancelBtn) cancelBtn.onclick = () => document.getElementById('apikey-modal').style.display = 'none';
-    const closeBtn = document.getElementById('close-apikey-modal');
-    if (closeBtn) closeBtn.onclick = () => document.getElementById('apikey-modal').style.display = 'none';
+    const modal = document.createElement('div');
+    modal.className = 'apikey-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2000;';
+    modal.innerHTML = `
+        <div class="apikey-modal-content">
+            <div class="apikey-modal-header">
+                <h3><i class="fas fa-key"></i> API-ключ OpenRouter</h3>
+                <button class="close-modal" id="close-apikey-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="apikey-modal-body">
+                <input type="password" id="apikey-input" placeholder="sk-or-v1-..." style="width:100%; padding:10px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white;">
+                <p style="font-size:12px; color: var(--text-secondary); margin-top:8px;">Ключ сохраняется для вашего Diamkey-аккаунта</p>
+            </div>
+            <div class="apikey-modal-footer" style="display:flex; gap:12px; margin-top:20px;">
+                <button id="save-apikey-btn" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+                <button id="cancel-apikey-btn" class="btn btn-secondary"><i class="fas fa-times"></i> Отмена</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.style.display = 'none';
+    modal.id = 'apikey-modal';
+
+    const saveBtn = modal.querySelector('#save-apikey-btn');
+    const cancelBtn = modal.querySelector('#cancel-apikey-btn');
+    const closeBtn = modal.querySelector('#close-apikey-modal');
+    const input = modal.querySelector('#apikey-input');
+
+    saveBtn.onclick = () => {
+        const key = input.value.trim();
+        if (!key) { showToast('Ошибка', 'Введите ключ', 'warning'); return; }
+        if (!currentUser) { showToast('Ошибка', 'Нет активного пользователя Diamkey', 'error'); return; }
+        saveUserApiKey(currentUser.login, key);
+        modal.style.display = 'none';
+        showToast('Ключ сохранён', 'OpenRouter активирован', 'success');
+    };
+    cancelBtn.onclick = () => modal.style.display = 'none';
+    closeBtn.onclick = () => modal.style.display = 'none';
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // Экспортируем функцию показа
+    window.showApiKeyModal = () => {
+        modal.style.display = 'flex';
+        input.value = userApiKey || '';
+    };
 }
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ UI ==========
@@ -667,25 +822,6 @@ window.addEventListener('resize', () => {
         if (collapsedActions) collapsedActions.classList.remove('show');
     }
 });
-
-function setupFoldersUI() {
-    const iconSel = document.getElementById('icon-selector');
-    if (iconSel) {
-        const icons = ['fa-folder', 'fa-folder-open', 'fa-book', 'fa-graduation-cap', 'fa-code', 'fa-music', 'fa-image', 'fa-video', 'fa-gamepad', 'fa-shopping-cart', 'fa-heart', 'fa-star', 'fa-rocket', 'fa-brain', 'fa-chart-line', 'fa-users', 'fa-calendar', 'fa-clock', 'fa-tag', 'fa-tasks'];
-        iconSel.innerHTML = icons.map(icon => `<div class="icon-option" data-icon="${icon}"><i class="fas ${icon}"></i></div>`).join('');
-        document.querySelectorAll('.icon-option').forEach(opt => opt.onclick = () => {
-            document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-        });
-    }
-    const colorSel = document.getElementById('color-selector');
-    if (colorSel) {
-        document.querySelectorAll('.color-option').forEach(opt => opt.onclick = () => {
-            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-        });
-    }
-}
 
 // ========== ПУСТОЕ СОСТОЯНИЕ ==========
 function renderEmptyState() {
@@ -751,15 +887,6 @@ async function showLoadingScreen() {
 
 // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
 function setupEventListeners() {
-    window.onclick = e => {
-        if (e.target === document.getElementById('avatar-modal')) document.getElementById('avatar-modal').style.display = 'none';
-        if (e.target === document.getElementById('folder-edit-modal')) document.getElementById('folder-edit-modal').style.display = 'none';
-        if (e.target === document.getElementById('folder-chats-modal')) document.getElementById('folder-chats-modal').style.display = 'none';
-        if (e.target === document.getElementById('terms-modal')) document.getElementById('terms-modal').style.display = 'none';
-        if (e.target === document.getElementById('privacy-modal')) document.getElementById('privacy-modal').style.display = 'none';
-        if (e.target === document.getElementById('rename-user-modal')) document.getElementById('rename-user-modal').style.display = 'none';
-    };
-
     document.getElementById('sidebarToggleBtn')?.addEventListener('click', toggleSidebar);
     document.getElementById('new-chat-btn')?.addEventListener('click', createNewChat);
     document.getElementById('folders-page-btn')?.addEventListener('click', switchToFoldersView);
@@ -767,31 +894,7 @@ function setupEventListeners() {
     document.getElementById('collapsedNewChat')?.addEventListener('click', createNewChat);
     document.getElementById('collapsedFolders')?.addEventListener('click', switchToFoldersView);
     document.getElementById('collapsedGenhab')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
-    document.getElementById('back-to-chat-from-folders')?.addEventListener('click', switchToChatView);
-    document.getElementById('create-folder-page-btn')?.addEventListener('click', () => {
-        currentEditingFolderId = null;
-        document.getElementById('folder-edit-title').innerText = 'Создать папку';
-        document.getElementById('folder-name').value = '';
-        document.getElementById('folder-description').value = '';
-        setupFoldersUI();
-        document.getElementById('folder-edit-modal').style.display = 'flex';
-    });
-    document.getElementById('save-folder-btn')?.addEventListener('click', () => {
-        const name = document.getElementById('folder-name').value.trim();
-        if (!name) { showToast('Ошибка', 'Введите название', 'warning'); return; }
-        const desc = document.getElementById('folder-description').value;
-        const selectedIcon = document.querySelector('.icon-option.selected');
-        const icon = selectedIcon ? selectedIcon.dataset.icon : 'fa-folder';
-        const selectedColor = document.querySelector('.color-option.selected');
-        const color = selectedColor ? selectedColor.dataset.color : '#95a5a6';
-        if (currentEditingFolderId) updateFolder(currentEditingFolderId, name, desc, icon, color);
-        else createFolder(name, desc, icon, color);
-        document.getElementById('folder-edit-modal').style.display = 'none';
-        currentEditingFolderId = null;
-    });
-    document.getElementById('cancel-folder-edit-btn')?.addEventListener('click', () => document.getElementById('folder-edit-modal').style.display = 'none');
-    document.getElementById('close-folder-edit-modal')?.addEventListener('click', () => document.getElementById('folder-edit-modal').style.display = 'none');
-    document.getElementById('close-folder-chats-modal')?.addEventListener('click', () => document.getElementById('folder-chats-modal').style.display = 'none');
+
     document.getElementById('user-input')?.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
@@ -803,15 +906,9 @@ function setupEventListeners() {
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
 
+    // Дропдаун пользователя
     document.getElementById('dropdown-discord')?.addEventListener('click', () => window.open('https://discord.gg/diamondshop', '_blank'));
-    document.getElementById('dropdown-terms')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'flex');
-    document.getElementById('dropdown-privacy')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'flex');
     document.getElementById('dropdown-logout')?.addEventListener('click', logout);
-    document.getElementById('close-terms-modal')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'none');
-    document.getElementById('close-privacy-modal')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'none');
-    document.getElementById('close-terms-btn')?.addEventListener('click', () => document.getElementById('terms-modal').style.display = 'none');
-    document.getElementById('close-privacy-btn')?.addEventListener('click', () => document.getElementById('privacy-modal').style.display = 'none');
-
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('userDropdown').classList.toggle('show');
@@ -822,8 +919,7 @@ function setupEventListeners() {
 
     document.getElementById('stop-btn')?.addEventListener('click', stopGeneration);
     document.getElementById('dropdown-api-key')?.addEventListener('click', () => {
-        document.getElementById('apikey-modal').style.display = 'flex';
-        document.getElementById('apikey-input').value = userApiKey || '';
+        if (window.showApiKeyModal) window.showApiKeyModal();
     });
 }
 

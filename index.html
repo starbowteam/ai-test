@@ -83,7 +83,6 @@
                     </div>
                     <button class="user-menu-btn" id="userMenuBtn"><i class="fas fa-ellipsis-v"></i></button>
                     <div class="user-dropdown" id="userDropdown">
-                        <button id="dropdown-api-key"><i class="fas fa-key"></i> API-ключ OpenRouter</button>
                         <button id="dropdown-discord"><i class="fab fa-discord"></i> Discord-сервер</button>
                         <button id="dropdown-logout"><i class="fas fa-sign-out-alt"></i> Выйти</button>
                     </div>
@@ -95,18 +94,14 @@
                     <div class="input-area" id="inputArea" style="display: none;">
                         <div class="input-wrapper">
                             <textarea id="user-input" placeholder="Введите свой запрос..." rows="1"></textarea>
-                            <button class="stop-btn" id="stop-btn" style="display: none;" title="Остановить генерацию">
-                                <i class="fas fa-stop"></i>
-                            </button>
                             <button class="send-btn" id="send-btn" disabled>
                                 <i class="fas fa-arrow-up"></i>
                             </button>
                         </div>
-                        <div class="input-footer">ИИ-Генерация, только для справки</div>
                     </div>
                 </div>
                 <div class="folders-page" id="foldersPage" style="display: none;">
-                    <!-- содержимое генерируется динамически -->
+                    <!-- генерируется динамически -->
                 </div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
                     <div class="genhab-header">
@@ -118,6 +113,7 @@
         </div>
     </div>
 
+    <!-- Модалка переименования чата (динамическая) -->
     <!-- Больше никаких модалок -->
     <div id="toast-container" class="toast-container"></div>
 

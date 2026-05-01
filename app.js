@@ -90,9 +90,13 @@ function stopThinkingAnimation() {
     }
 }
 
-// ========== LaTeX РЕНДЕР ==========
+// ========== LaTeX РЕНДЕР (ГАРАНТИРОВАННЫЙ) ==========
 function renderMathInElementWithMhchem(element) {
-    if (!element || typeof renderMathInElement === 'undefined') return;
+    if (!element || typeof renderMathInElement === 'undefined') {
+        console.warn('KaTeX auto-render not loaded yet, retrying...');
+        setTimeout(() => renderMathInElementWithMhchem(element), 100);
+        return;
+    }
     try {
         renderMathInElement(element, {
             delimiters: [
@@ -111,7 +115,7 @@ function showCodeRunnerModal(code, language) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-container" style="resize: both; overflow: auto;">
+        <div class="modal-container" style="resize: none;">
             <div class="modal-header">
                 <h3><i class="fas fa-play"></i> Выполнить код (${language || 'текст'})</h3>
                 <button class="close-modal"><i class="fas fa-times"></i></button>
@@ -401,7 +405,7 @@ function showRenameModal(chatId) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-container" style="max-width: 400px;">
+        <div class="modal-container" style="max-width: 400px; resize: none;">
             <div class="modal-header">
                 <h3>Переименовать чат</h3>
                 <button class="close-modal"><i class="fas fa-times"></i></button>
@@ -496,7 +500,7 @@ function showFolderEditModal(folder = null) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-container" style="max-width: 500px; resize: none;">
             <div class="modal-header">
                 <h3>${isEdit ? 'Редактировать папку' : 'Создать папку'}</h3>
                 <button class="close-modal"><i class="fas fa-times"></i></button>
@@ -581,7 +585,7 @@ function showFolderSelectModal(chatId) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-container" style="max-width: 400px;">
+        <div class="modal-container" style="max-width: 400px; resize: none;">
             <div class="modal-header">
                 <h3><i class="fas fa-folder"></i> Выбрать папку</h3>
                 <button class="close-modal"><i class="fas fa-times"></i></button>
@@ -689,7 +693,7 @@ function showFolderChatsModal(folder) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-container" style="max-width: 500px; resize: none;">
             <div class="modal-header">
                 <h3><i class="fas ${folder.icon}" style="color:${folder.color}"></i> Чаты в папке «${escapeHtml(folder.name)}»</h3>
                 <button class="close-modal"><i class="fas fa-times"></i></button>
@@ -781,7 +785,7 @@ function renderHistory() {
     });
 }
 
-// ========== РЕНДЕР ЧАТА ==========
+// ========== РЕНДЕР ЧАТА (С ГАРАНТИРОВАННЫМ LaTeX) ==========
 function renderChat() {
     const chat = chats.find(c => c.id === currentChatId);
     if (!chat || !chat.messages || chat.messages.length === 0) {
@@ -815,8 +819,11 @@ function renderChat() {
         container.appendChild(messageDiv);
     });
     
-    renderMathInElementWithMhchem(container);
-    enhanceCodeBlocks(container);
+    // Принудительный рендер формул с задержкой, чтобы DOM точно обновился
+    setTimeout(() => {
+        renderMathInElementWithMhchem(container);
+        enhanceCodeBlocks(container);
+    }, 10);
     scrollToBottom();
 }
 

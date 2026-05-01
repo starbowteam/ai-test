@@ -20,6 +20,9 @@ let placeholderInterval = null;
 let thinkingTimer = null;
 let thinkingDots = 0;
 
+// Для регулировки положения collapsed-actions на ПК
+let collapsedLeftOffset = 64; // пикселей, можно менять в консоли или через настройки
+
 const placeholderTexts = [
     "Что расскажешь о себе?",
     "Расскажи новости за сегодня",
@@ -306,7 +309,7 @@ function showRenameModal(chatId) {
     input.onkeydown = (e) => { if(e.key === 'Enter') { const newName = input.value.trim(); if(newName) renameChat(chatId, newName); close(); } };
 }
 
-// ========== ПАПКИ (функции без изменений, но для краткости оставлены вызовы) ==========
+// ========== ПАПКИ ==========
 function loadFolders() { loadFoldersForUser(); }
 function createFolder(name, desc, icon, color) {
     folders.push({ id: Date.now().toString(), name: name.trim(), description: desc || '', icon: icon || 'fa-folder', color: color || '#95a5a6', createdAt: Date.now() });
@@ -778,7 +781,6 @@ function toggleSidebar() {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
         sidebar.classList.toggle('open');
-        // При открытом сайдбаре блокируем скролл боди
         document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
     } else {
         sidebarCollapsed = !sidebarCollapsed;
@@ -787,6 +789,12 @@ function toggleSidebar() {
         if (collapsedActions) collapsedActions.classList.toggle('show', sidebarCollapsed);
     }
 }
+// Функция для регулировки отступа коллапс-панели (можно вызывать из консоли)
+window.setCollapsedOffset = function(offsetPx) {
+    collapsedLeftOffset = offsetPx;
+    document.documentElement.style.setProperty('--collapsed-left-offset', offsetPx + 'px');
+    showToast('Отступ панели кнопок', `${offsetPx}px`, 'success', 1500);
+};
 // Закрытие сайдбара при клике вне на мобилке
 document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -939,6 +947,8 @@ function setupEventListeners() {
     updateUserPanel();
     updateSendButtonState();
     if (chats.length) renderHistory();
+    // Устанавливаем начальное значение отступа для коллапс-панели
+    document.documentElement.style.setProperty('--collapsed-left-offset', collapsedLeftOffset + 'px');
     log('Готово');
 })();
 function afterLogin() {

@@ -732,6 +732,8 @@ body {
     overflow-wrap: break-word;
     white-space: pre-wrap;
     text-align: left;
+    /* убираем лишние отступы снизу */
+    margin-bottom: 0;
 }
 
 .message.user .message-content {
@@ -752,6 +754,9 @@ body {
     gap: 6px;
     margin-top: 6px;
     justify-content: flex-end;
+    /* убираем лишние отступы */
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 .action-btn {
@@ -992,7 +997,6 @@ textarea::placeholder {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border-color);
-    /* resize удалён */
     overflow: auto;
 }
 
@@ -1008,7 +1012,6 @@ textarea::placeholder {
     font-size: 18px;
 }
 
-/* крестик убран */
 .close-modal {
     display: none;
 }
@@ -1051,7 +1054,7 @@ textarea::placeholder {
 /* ========== ОБЩИЕ КНОПКИ (овальные, единые) ========== */
 .btn {
     padding: 8px 18px;
-    border-radius: 40px; /* вытянутый овал */
+    border-radius: 40px;
     border: 1px solid var(--border-color);
     font-size: 13px;
     font-weight: 600;

@@ -992,7 +992,7 @@ textarea::placeholder {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border-color);
-    resize: both;
+    /* убрали resize: both */
     overflow: auto;
 }
 
@@ -1030,7 +1030,7 @@ textarea::placeholder {
     cursor: pointer;
     width: 36px;
     height: 36px;
-    border-radius: 50%;
+    border-radius: 50%; /* крестик остаётся круглым */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1063,10 +1063,10 @@ textarea::placeholder {
     margin-top: 16px;
 }
 
-/* ========== ОБЩИЕ КНОПКИ ========== */
+/* ========== ОБЩИЕ КНОПКИ (единые овальные) ========== */
 .btn {
     padding: 8px 18px;
-    border-radius: 40px;
+    border-radius: 40px; /* овальные */
     border: 1px solid var(--border-color);
     font-size: 13px;
     font-weight: 600;
@@ -1413,7 +1413,7 @@ textarea::placeholder {
 
     .modal-container {
         max-width: 95%;
-        resize: none;
+        resize: none; /* дополнительная страховка */
     }
 }
 

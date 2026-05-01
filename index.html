@@ -9,52 +9,41 @@
     <link rel="apple-touch-icon" href="fulco.ico">
     <meta name="theme-color" content="#1e1e1e">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=7">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     
-    <!-- KaTeX and extensions -->
+    <!-- KaTeX + mhchem -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
     
-    <!-- Markdown and sanitizer -->
+    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
 </head>
 <body>
-    <!-- Загрузочный экран -->
     <div class="welcome-screen" id="welcomeScreen">
-        <div class="spinner-container">
-            <i class="fas fa-circle-notch fa-spin"></i>
-        </div>
+        <div class="spinner-container"><i class="fas fa-circle-notch fa-spin"></i></div>
     </div>
 
-    <!-- Экран входа -->
     <div class="choice-screen" id="choiceScreen" style="display: none;">
         <div class="choice-container">
             <div class="logo">
-                <img src="fulco.ico" alt="DIAMOND AI Logo" class="logo-img">
+                <img src="fulco.ico" alt="logo" class="logo-img">
                 <h1>DIAMOND AI</h1>
                 <p>Войдите через Diamkey, чтобы продолжить</p>
             </div>
-            <button class="btn btn-diamkey" id="diamkeyLoginBtn">
-                <i class="fas fa-gem"></i> Войти по Diamkey
-            </button>
-            <p class="footer-note">
-                Нет аккаунта? <a href="https://diamkey.ru" target="_blank">Создать Diamkey</a>
-            </p>
+            <button class="btn btn-diamkey" id="diamkeyLoginBtn"><i class="fas fa-gem"></i> Войти по Diamkey</button>
+            <p class="footer-note">Нет аккаунта? <a href="https://diamkey.ru" target="_blank">Создать Diamkey</a></p>
         </div>
     </div>
 
-    <!-- Основной интерфейс -->
     <div class="main-ui" id="mainUI" style="display: none;">
         <header class="title-bar" id="titleBar">
             <div class="title-bar-left">
-                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Меню">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo-area" id="logoArea">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn"><i class="fas fa-bars"></i></button>
+                <div class="logo-area">
                     <img src="fulco.ico" alt="logo" class="logo-icon-img">
                     <span class="logo-text">DIAMOND AI</span>
                 </div>
@@ -71,9 +60,9 @@
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
                     <div class="action-buttons-frame">
-                        <button id="new-chat-btn" class="frame-btn" title="Новый чат"><i class="fas fa-feather-alt"></i></button>
-                        <button id="folders-page-btn" class="frame-btn" title="Папки"><i class="fas fa-folder"></i></button>
-                        <button id="genhab-page-btn" class="frame-btn" title="ГенХаб"><i class="fas fa-magic"></i></button>
+                        <button id="new-chat-btn" class="frame-btn"><i class="fas fa-feather-alt"></i> Новый чат</button>
+                        <button id="folders-page-btn" class="frame-btn"><i class="fas fa-folder"></i> Папки</button>
+                        <button id="genhab-page-btn" class="frame-btn"><i class="fas fa-magic"></i> ГенХаб</button>
                     </div>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
@@ -82,12 +71,8 @@
                 </div>
                 <div class="history-list" id="history-list"></div>
                 <div class="user-panel" id="userPanel">
-                    <div class="user-avatar" id="userAvatarPanel">
-                        <img id="userAvatarImg" src="" alt="avatar">
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name" id="userNameDisplay">Пользователь</div>
-                    </div>
+                    <div class="user-avatar"><img id="userAvatarImg" src="" alt="avatar"></div>
+                    <div class="user-info"><div class="user-name" id="userNameDisplay">Пользователь</div></div>
                     <button class="user-menu-btn" id="userMenuBtn"><i class="fas fa-ellipsis-v"></i></button>
                     <div class="user-dropdown" id="userDropdown">
                         <button id="dropdown-discord"><i class="fab fa-discord"></i> Discord-сервер</button>
@@ -101,18 +86,13 @@
                     <div class="input-area" id="inputArea" style="display: none;">
                         <div class="input-wrapper">
                             <textarea id="user-input" placeholder="Введите свой запрос..." rows="1"></textarea>
-                            <button class="send-btn" id="send-btn" disabled>
-                                <i class="fas fa-arrow-up"></i>
-                            </button>
+                            <button class="send-btn" id="send-btn" disabled><i class="fas fa-arrow-up"></i></button>
                         </div>
                     </div>
                 </div>
                 <div class="folders-page" id="foldersPage" style="display: none;"></div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
-                    <div class="genhab-header">
-                        <h1><i class="fas fa-magic"></i> ГенХаб</h1>
-                        <p>Здесь будут инструменты генерации</p>
-                    </div>
+                    <div class="genhab-header"><h1><i class="fas fa-magic"></i> ГенХаб</h1><p>Инструменты генерации (в разработке)</p></div>
                 </div>
             </main>
         </div>
@@ -120,6 +100,6 @@
 
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=7"></script>
 </body>
 </html>

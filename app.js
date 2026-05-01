@@ -1148,9 +1148,12 @@ function setupEventListeners() {
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
     
     document.getElementById('dropdown-discord')?.addEventListener('click', () => {
-        window.open('https://discord.gg/diamondshop', '_blank');
-    });
-    document.getElementById('dropdown-logout')?.addEventListener('click', logout);
+    window.open('https://discord.gg/diamondshop', '_blank');
+});
+document.getElementById('dropdown-diamkey')?.addEventListener('click', () => {
+    window.open('https://diamkey.ru', '_blank');
+});
+document.getElementById('dropdown-logout')?.addEventListener('click', logout);
     
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();

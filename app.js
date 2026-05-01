@@ -794,7 +794,7 @@ function renderChat() {
     container.innerHTML = '';
     let lastDate = null;
     
-    chat.messages.forEach((msg) => {
+    chat.messages.forEach((msg, idx) => {
         const date = new Date(msg.timestamp || chat.createdAt).toDateString();
         if (date !== lastDate) {
             container.innerHTML += `<div class="date-divider"><span>${formatDateHeader(msg.timestamp || chat.createdAt)}</span></div>`;
@@ -812,11 +812,37 @@ function renderChat() {
                 <div class="message-time">${formatTime(msg.timestamp || Date.now())}</div>
             </div>
         `;
+        if (msg.role === 'assistant' && !msg.isTyping) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+            actionsDiv.innerHTML = `<button class="action-btn copy-msg-btn" data-msg-idx="${idx}"><i class="fas fa-copy"></i></button><button class="action-btn regen-msg-btn" data-msg-idx="${idx}"><i class="fas fa-sync-alt"></i></button>`;
+            messageDiv.appendChild(actionsDiv);
+        }
         container.appendChild(messageDiv);
     });
     
-    renderMathInElementWithMhchem(container);
-    enhanceCodeBlocks(container);
+    container.querySelectorAll('.copy-msg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.msgIdx);
+            const msg = chat.messages[idx];
+            if (msg && msg.content) {
+                navigator.clipboard.writeText(msg.content);
+                showToast('Скопировано', '', 'success', 1500);
+            }
+        });
+    });
+    container.querySelectorAll('.regen-msg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.msgIdx);
+            const msg = chat.messages[idx];
+            if (msg && msg.role === 'assistant') regenerateResponse(msg);
+        });
+    });
+    
+    setTimeout(() => {
+        renderMathInElementWithMhchem(container);
+        enhanceCodeBlocks(container);
+    }, 10);
     scrollToBottom();
 }
 
@@ -1148,12 +1174,13 @@ function setupEventListeners() {
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
     
     document.getElementById('dropdown-discord')?.addEventListener('click', () => {
-    window.open('https://discord.gg/diamondshop', '_blank');
-});
-document.getElementById('dropdown-diamkey')?.addEventListener('click', () => {
-    window.open('https://diamkey.ru', '_blank');
-});
-document.getElementById('dropdown-logout')?.addEventListener('click', logout);
+        window.open('https://discord.gg/diamondshop', '_blank');
+    });
+    // Новая кнопка DiamKey
+    document.getElementById('dropdown-diamkey')?.addEventListener('click', () => {
+        window.open('https://diamkey.ru', '_blank');
+    });
+    document.getElementById('dropdown-logout')?.addEventListener('click', logout);
     
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();

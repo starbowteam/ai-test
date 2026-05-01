@@ -90,11 +90,10 @@ function stopThinkingAnimation() {
     }
 }
 
-// ========== LaTeX РЕНДЕР (ГАРАНТИРОВАННЫЙ) ==========
-function renderMathInElementWithMhchem(element) {
+// ========== LaTeX РЕНДЕР ==========
+function renderMathInElementWithMhcem(element) {
     if (!element || typeof renderMathInElement === 'undefined') {
-        console.warn('KaTeX auto-render not loaded yet, retrying...');
-        setTimeout(() => renderMathInElementWithMhchem(element), 100);
+        setTimeout(() => renderMathInElementWithMhcem(element), 100);
         return;
     }
     try {
@@ -137,10 +136,9 @@ function showCodeRunnerModal(code, language) {
     const runExecute = modal.querySelector('.run-execute');
     
     function executeCode() {
-        const newCode = editor.value;
-        let htmlContent = newCode;
+        let htmlContent = editor.value;
         if (!htmlContent.trim().toLowerCase().includes('<html')) {
-            htmlContent = `<html><head><meta charset="UTF-8"><title>Run</title><style>body{background:#1e1e1e;color:#f0f0f0;font-family:monospace;padding:16px;}</style></head><body><pre>${escapeHtml(newCode)}</pre><script>try{${newCode}}catch(e){document.body.innerHTML+='<div style="color:red">Ошибка: '+e.message+'</div>';}<\/script></body></html>`;
+            htmlContent = `<html><head><meta charset="UTF-8"><title>Run</title><style>body{background:#1e1e1e;color:#f0f0f0;font-family:monospace;padding:16px;}</style></head><body><pre>${escapeHtml(htmlContent)}</pre><script>try{${htmlContent}}catch(e){document.body.innerHTML+='<div style="color:red">Ошибка: '+e.message+'</div>';}<\/script></body></html>`;
         }
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -411,7 +409,7 @@ function showRenameModal(chatId) {
                 <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:12px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 20px; color: white;">
+                <input type="text" id="rename-input" value="${escapeHtml(chat.title)}" style="width:100%; padding:12px; background: var(--bg-tertiary); border:1px solid var(--border-color); border-radius: 14px; color: white;">
             </div>
             <div class="modal-footer">
                 <button id="rename-confirm" class="btn btn-primary">Сохранить</button>
@@ -508,11 +506,11 @@ function showFolderEditModal(folder = null) {
             <div class="modal-body">
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display:block; margin-bottom:6px;">Название</label>
-                    <input type="text" id="folder-name" placeholder="Название папки" value="${isEdit ? escapeHtml(folder.name) : ''}" style="width:100%; padding:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:16px; color:white;">
+                    <input type="text" id="folder-name" placeholder="Название папки" value="${isEdit ? escapeHtml(folder.name) : ''}" style="width:100%; padding:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:14px; color:white;">
                 </div>
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display:block; margin-bottom:6px;">Описание</label>
-                    <textarea id="folder-description" rows="2" placeholder="Описание папки" style="width:100%; padding:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:16px; color:white;">${isEdit ? escapeHtml(folder.description || '') : ''}</textarea>
+                    <textarea id="folder-description" rows="2" placeholder="Описание папки" style="width:100%; padding:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:14px; color:white;">${isEdit ? escapeHtml(folder.description || '') : ''}</textarea>
                 </div>
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display:block; margin-bottom:6px;">Иконка</label>
@@ -592,12 +590,12 @@ function showFolderSelectModal(chatId) {
             </div>
             <div class="modal-body">
                 <div class="folder-chats-list" id="folder-options-list">
-                    <div class="folder-chat-item" data-id="" style="padding:12px; background:var(--bg-tertiary); border-radius:16px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                    <div class="folder-chat-item" data-id="" style="padding:12px; background:var(--bg-tertiary); border-radius:14px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
                         <i class="fas fa-times-circle"></i>
                         <span>Без папки</span>
                     </div>
                     ${folders.map(f => `
-                        <div class="folder-chat-item" data-id="${f.id}" style="padding:12px; background:var(--bg-tertiary); border-radius:16px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                        <div class="folder-chat-item" data-id="${f.id}" style="padding:12px; background:var(--bg-tertiary); border-radius:14px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
                             <i class="fas ${f.icon}" style="color:${f.color}"></i>
                             <span>${escapeHtml(f.name)}</span>
                         </div>
@@ -701,7 +699,7 @@ function showFolderChatsModal(folder) {
             <div class="modal-body">
                 <div class="folder-chats-list">
                     ${chatsInFolder.length ? chatsInFolder.map(c => `
-                        <div class="folder-chat-item" data-chat-id="${c.id}" style="padding:12px; background:var(--bg-tertiary); border-radius:16px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                        <div class="folder-chat-item" data-chat-id="${c.id}" style="padding:12px; background:var(--bg-tertiary); border-radius:14px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px;">
                             <i class="fas fa-comment"></i>
                             <span style="flex:1;">${escapeHtml(c.title)}</span>
                             <i class="fas fa-arrow-right"></i>
@@ -768,7 +766,9 @@ function renderHistory() {
     
     document.querySelectorAll('.history-item').forEach(el => {
         el.addEventListener('click', (e) => {
-            if (!e.target.closest('.chat-actions-hover')) switchChat(el.dataset.id);
+            if (!e.target.closest('.chat-actions-hover')) {
+                switchChat(el.dataset.id);
+            }
         });
     });
     document.querySelectorAll('.rename-chat-hover').forEach(btn => {
@@ -785,7 +785,7 @@ function renderHistory() {
     });
 }
 
-// ========== РЕНДЕР ЧАТА (С ГАРАНТИРОВАННЫМ LaTeX) ==========
+// ========== РЕНДЕР ЧАТА ==========
 function renderChat() {
     const chat = chats.find(c => c.id === currentChatId);
     if (!chat || !chat.messages || chat.messages.length === 0) {
@@ -798,7 +798,7 @@ function renderChat() {
     container.innerHTML = '';
     let lastDate = null;
     
-    chat.messages.forEach((msg) => {
+    chat.messages.forEach((msg, idx) => {
         const date = new Date(msg.timestamp || chat.createdAt).toDateString();
         if (date !== lastDate) {
             container.innerHTML += `<div class="date-divider"><span>${formatDateHeader(msg.timestamp || chat.createdAt)}</span></div>`;
@@ -816,12 +816,44 @@ function renderChat() {
                 <div class="message-time">${formatTime(msg.timestamp || Date.now())}</div>
             </div>
         `;
+        
+        if (msg.role === 'assistant' && !msg.isTyping) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+            actionsDiv.innerHTML = `
+                <button class="action-btn copy-msg-btn" data-msg-idx="${idx}"><i class="fas fa-copy"></i> Копировать</button>
+                <button class="action-btn regen-msg-btn" data-msg-idx="${idx}"><i class="fas fa-sync-alt"></i> Перегенерировать</button>
+            `;
+            messageDiv.appendChild(actionsDiv);
+        }
         container.appendChild(messageDiv);
     });
     
-    // Принудительный рендер формул с задержкой, чтобы DOM точно обновился
+    // Копирование сообщения
+    container.querySelectorAll('.copy-msg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.msgIdx);
+            const msg = chat.messages[idx];
+            if (msg && msg.content) {
+                navigator.clipboard.writeText(msg.content);
+                showToast('Скопировано', '', 'success', 1500);
+            }
+        });
+    });
+    
+    // Перегенерация
+    container.querySelectorAll('.regen-msg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.msgIdx);
+            const msg = chat.messages[idx];
+            if (msg && msg.role === 'assistant') {
+                regenerateResponse(msg);
+            }
+        });
+    });
+    
     setTimeout(() => {
-        renderMathInElementWithMhchem(container);
+        renderMathInElementWithMhcem(container);
         enhanceCodeBlocks(container);
     }, 10);
     scrollToBottom();
@@ -830,9 +862,9 @@ function renderChat() {
 function formatDateHeader(ts) {
     const d = new Date(ts);
     const t = new Date();
+    if (d.toDateString() === t.toDateString()) return 'Сегодня';
     const y = new Date(t);
     y.setDate(y.getDate() - 1);
-    if (d.toDateString() === t.toDateString()) return 'Сегодня';
     if (d.toDateString() === y.toDateString()) return 'Вчера';
     return d.toLocaleDateString('ru-RU');
 }
@@ -860,7 +892,7 @@ function addMessageToDOM(role, content, save = true) {
     return messageId;
 }
 
-// ========== ОТПРАВКА СООБЩЕНИЯ (БЕЗ СТРИМИНГА) ==========
+// ========== ОТПРАВКА СООБЩЕНИЯ ==========
 async function sendMessage() {
     const text = document.getElementById('user-input').value.trim();
     if (!text || isWaitingForResponse) return;
@@ -926,11 +958,7 @@ async function sendMessage() {
             console.error('Mistral API error:', resp.status);
         }
     } catch (e) {
-        if (e.name === 'AbortError') {
-            console.log('Request aborted');
-        } else {
-            console.warn('Mistral error:', e);
-        }
+        if (e.name !== 'AbortError') console.warn('Mistral error:', e);
     }
     
     stopThinkingAnimation();
@@ -1025,7 +1053,6 @@ function toggleSidebar() {
     }
 }
 
-// Закрытие сайдбара при клике вне на мобилке
 document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');

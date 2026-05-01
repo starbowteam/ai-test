@@ -67,24 +67,20 @@ function scrollToBottom() {
     if (container) container.scrollTop = container.scrollHeight;
 }
 
-// ========== ОБРАБОТКА БЛОКОВ КОДА ПОСЛЕ РЕНДЕРИНГА ==========
+// ========== ОБРАБОТКА БЛОКОВ КОДА ==========
 function enhanceCodeBlocks(container) {
     if (!container) return;
     const preBlocks = container.querySelectorAll('pre');
     preBlocks.forEach(pre => {
-        // Проверяем, не обёрнут ли уже
         if (pre.parentElement.classList.contains('code-block-wrapper')) return;
-        
         const code = pre.querySelector('code');
         let language = '';
         if (code && code.className) {
             const match = code.className.match(/language-(\w+)/);
             if (match) language = match[1];
         }
-        
         const wrapper = document.createElement('div');
         wrapper.className = 'code-block-wrapper';
-        
         const header = document.createElement('div');
         header.className = 'code-block-header';
         header.innerHTML = `
@@ -94,13 +90,9 @@ function enhanceCodeBlocks(container) {
                 <button class="download-code-btn" title="Скачать"><i class="fas fa-download"></i> Скачать</button>
             </div>
         `;
-        
-        // Перемещаем pre внутрь wrapper
         pre.parentNode.insertBefore(wrapper, pre);
         wrapper.appendChild(header);
         wrapper.appendChild(pre);
-        
-        // Обработчик копирования
         const copyBtn = wrapper.querySelector('.copy-code-btn');
         copyBtn.addEventListener('click', () => {
             const text = pre.textContent;
@@ -111,8 +103,6 @@ function enhanceCodeBlocks(container) {
                 }, 2000);
             });
         });
-        
-        // Обработчик скачивания
         const downloadBtn = wrapper.querySelector('.download-code-btn');
         downloadBtn.addEventListener('click', () => {
             const text = pre.textContent;
@@ -131,7 +121,6 @@ function enhanceCodeBlocks(container) {
 function storageKey(base) {
     return currentUser ? `${base}_${currentUser.login}` : base;
 }
-
 function saveChats() {
     localStorage.setItem(storageKey('diamondChats'), JSON.stringify(chats));
     renderHistory();
@@ -139,7 +128,6 @@ function saveChats() {
 function saveFolders() {
     localStorage.setItem(storageKey('diamondFolders'), JSON.stringify(folders));
 }
-
 function loadChatsForUser() {
     const stored = localStorage.getItem(storageKey('diamondChats'));
     if (stored) {
@@ -157,7 +145,6 @@ function loadChatsForUser() {
     }
     renderHistory();
 }
-
 function loadFoldersForUser() {
     const stored = localStorage.getItem(storageKey('diamondFolders'));
     folders = stored ? JSON.parse(stored) : [];
@@ -172,23 +159,19 @@ async function exchangeTicket(ticket) {
         const tickets = await resp.json();
         if (!tickets.length) throw new Error('Тикет не найден или уже использован');
         const ticketData = tickets[0];
-
         resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
             method: 'PATCH',
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ used: true })
         });
         if (!resp.ok) throw new Error('Не удалось обновить тикет');
-
         const login = ticketData.login;
         if (!login) throw new Error('Тикет не содержит логин');
-
         resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
         if (!resp.ok) throw new Error('Ошибка получения пользователя');
         const users = await resp.json();
         if (!users.length) throw new Error('Пользователь не найден');
         const user = users[0];
-
         return {
             login: user.login,
             secretWord: user.secret_word,
@@ -202,7 +185,6 @@ async function exchangeTicket(ticket) {
         throw e;
     }
 }
-
 async function fetchMistralKey() {
     try {
         const resp = await fetch(`${SUPABASE_URL}/rest/v1/service_config?id=eq.1`, {
@@ -220,7 +202,6 @@ async function fetchMistralKey() {
         return false;
     }
 }
-
 async function processDiamkeyReturn() {
     const urlParams = new URLSearchParams(window.location.search);
     const ticket = urlParams.get('ticket');
@@ -238,7 +219,6 @@ async function processDiamkeyReturn() {
         return false;
     }
 }
-
 function logout() {
     currentUser = null;
     mistralApiKey = '';
@@ -259,7 +239,6 @@ function getUserAvatarHTML() {
     if (currentUser && currentUser.fa_icon) return `<i class="${currentUser.fa_icon}"></i>`;
     return '<i class="fas fa-user"></i>';
 }
-
 function updateUserPanel() {
     const nameSpan = document.getElementById('userNameDisplay');
     const avatarImg = document.getElementById('userAvatarImg');
@@ -288,7 +267,6 @@ function startThinkingAnimation() {
         }, 500);
     }
 }
-
 function stopThinkingAnimation() {
     if (thinkingTimer) {
         clearInterval(thinkingTimer);
@@ -328,7 +306,7 @@ function showRenameModal(chatId) {
     input.onkeydown = (e) => { if(e.key === 'Enter') { const newName = input.value.trim(); if(newName) renameChat(chatId, newName); close(); } };
 }
 
-// ========== ПАПКИ ==========
+// ========== ПАПКИ (функции без изменений, но для краткости оставлены вызовы) ==========
 function loadFolders() { loadFoldersForUser(); }
 function createFolder(name, desc, icon, color) {
     folders.push({ id: Date.now().toString(), name: name.trim(), description: desc || '', icon: icon || 'fa-folder', color: color || '#95a5a6', createdAt: Date.now() });
@@ -351,7 +329,6 @@ function moveChatToFolder(chatId, folderId) {
     const chat = chats.find(c => c.id === chatId);
     if (chat) { chat.folderId = folderId; saveChats(); renderHistory(); renderFoldersPage(); showToast('Чат перемещён', folderId ? 'В папку' : 'Из папки', 'success'); }
 }
-
 function renderFoldersPage() {
     const container = document.getElementById('foldersPage');
     if (!container) return;
@@ -366,13 +343,11 @@ function renderFoldersPage() {
             <button id="back-to-chat-from-folders" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Назад к чату</button>
         </div>
     `;
-
     document.getElementById('create-folder-page-btn').addEventListener('click', () => {
         currentEditingFolderId = null;
         showFolderEditModal(null);
     });
     document.getElementById('back-to-chat-from-folders').addEventListener('click', switchToChatView);
-
     const listContainer = document.getElementById('foldersListContainer');
     if (folders.length === 0) {
         listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">У вас пока нет папок. Создайте первую!</div>';
@@ -393,27 +368,23 @@ function renderFoldersPage() {
             </div>
         </div>
     `).join('');
-
     document.querySelectorAll('.view-folder-chats').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         const folderId = btn.dataset.id;
         const folder = folders.find(f => f.id === folderId);
         if (folder) showFolderChatsModal(folder);
     });
-
     document.querySelectorAll('.edit-folder').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         currentEditingFolderId = btn.dataset.id;
         const f = folders.find(f => f.id === currentEditingFolderId);
         showFolderEditModal(f);
     });
-
     document.querySelectorAll('.delete-folder').forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
         deleteFolder(btn.dataset.id);
     });
 }
-
 function showFolderEditModal(folder = null) {
     const modal = document.createElement('div');
     modal.className = 'folder-edit-modal';
@@ -455,7 +426,6 @@ function showFolderEditModal(folder = null) {
     `;
     modal.appendChild(content);
     document.body.appendChild(modal);
-
     const iconSel = content.querySelector('#icon-selector');
     const icons = ['fa-folder', 'fa-folder-open', 'fa-book', 'fa-graduation-cap', 'fa-code', 'fa-music', 'fa-image', 'fa-video', 'fa-gamepad', 'fa-shopping-cart', 'fa-heart', 'fa-star', 'fa-rocket', 'fa-brain', 'fa-chart-line', 'fa-users', 'fa-calendar', 'fa-clock', 'fa-tag', 'fa-tasks'];
     iconSel.innerHTML = icons.map(icon => `<div class="icon-option${isEdit && folder.icon === icon ? ' selected' : ''}" data-icon="${icon}"><i class="fas ${icon}"></i></div>`).join('');
@@ -463,7 +433,6 @@ function showFolderEditModal(folder = null) {
         iconSel.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
         opt.classList.add('selected');
     });
-
     if (isEdit) {
         content.querySelectorAll('.color-option').forEach(opt => {
             if (opt.dataset.color === folder.color) opt.classList.add('selected');
@@ -474,7 +443,6 @@ function showFolderEditModal(folder = null) {
         content.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
         opt.classList.add('selected');
     });
-
     content.querySelector('#save-folder-btn').onclick = () => {
         const name = content.querySelector('#folder-name').value.trim();
         if (!name) { showToast('Ошибка', 'Введите название', 'warning'); return; }
@@ -490,7 +458,6 @@ function showFolderEditModal(folder = null) {
     content.querySelector('#cancel-folder-btn').onclick = () => modal.remove();
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
-
 function showFolderChatsModal(folder) {
     const chatsIn = chats.filter(c => c.folderId === folder.id);
     const modal = document.createElement('div');
@@ -515,10 +482,8 @@ function showFolderChatsModal(folder) {
     `;
     modal.appendChild(content);
     document.body.appendChild(modal);
-
     content.querySelector('.close-chats-btn').onclick = () => modal.remove();
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
     content.querySelectorAll('.folder-chat-item').forEach(item => {
         item.onclick = () => {
             switchChat(item.dataset.chatId);
@@ -527,7 +492,6 @@ function showFolderChatsModal(folder) {
         };
     });
 }
-
 function showFolderSelectModal(chatId) {
     const modal = document.createElement('div'); modal.className = 'folder-modal-temp';
     modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2500;';
@@ -553,10 +517,8 @@ function showFolderSelectModal(chatId) {
     `;
     modal.appendChild(content);
     document.body.appendChild(modal);
-
     content.querySelector('.close-chats-btn').onclick = () => modal.remove();
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
     content.querySelectorAll('.folder-chat-item').forEach(item => {
         item.onclick = () => {
             moveChatToFolder(chatId, item.dataset.id || null);
@@ -581,7 +543,6 @@ function renderHistory() {
     const groups = { 'Сегодня': [], 'Вчера': [], 'Более 2-х дней назад': [] };
     filtered.forEach(c => groups[getDateGroup(c.lastActivity || c.createdAt)].push(c));
     for (const g in groups) groups[g].sort((a,b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1) || (b.lastActivity - a.lastActivity));
-
     let html = '';
     for (const g of ['Сегодня', 'Вчера', 'Более 2-х дней назад']) {
         if (!groups[g].length) continue;
@@ -600,7 +561,6 @@ function renderHistory() {
         html += '</div>';
     }
     list.innerHTML = html || '<div style="text-align:center; padding:20px;">Нет чатов</div>';
-
     document.querySelectorAll('.history-item').forEach(el => el.addEventListener('click', (e) => {
         if (!e.target.closest('.chat-actions-hover')) switchChat(el.dataset.id);
     }));
@@ -658,7 +618,6 @@ function renderChat() {
         }
         container.appendChild(messageDiv);
     });
-    // Применяем улучшение для всех пре-блоков после рендера
     enhanceCodeBlocks(container);
     scrollToBottom();
 }
@@ -672,7 +631,6 @@ function formatDateHeader(ts) {
     return d.toLocaleDateString('ru-RU');
 }
 function formatTime(ts) { return new Date(ts).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' }); }
-
 function addMessageToDOM(role, content, save = true) {
     const timestamp = Date.now();
     const messageId = timestamp + Math.random();
@@ -699,7 +657,6 @@ async function sendMessage() {
         showToast('Ошибка', 'API-ключ не загружен', 'error');
         return;
     }
-
     let chat = chats.find(c => c.id === currentChatId);
     if (!chat || chat.messages.length === 0) {
         const now = Date.now();
@@ -710,7 +667,6 @@ async function sendMessage() {
         renderHistory();
         document.getElementById('inputArea').style.display = 'flex';
     }
-
     addMessageToDOM('user', text, true);
     document.getElementById('user-input').value = '';
     const emptyInput = document.getElementById('empty-input');
@@ -718,21 +674,18 @@ async function sendMessage() {
     updateSendButtonState();
     isWaitingForResponse = true;
     updateSendButtonState();
-
     const typingId = Date.now().toString();
     const typingMsg = { id: typingId, role: 'assistant', content: '', isTyping: true, timestamp: Date.now() };
     chat.messages.push(typingMsg);
     renderChat();
     scrollToBottom();
     startThinkingAnimation();
-
     const contextMessages = chat.messages.filter(m => !m.isTyping).slice(-15).map(m => ({ role: m.role, content: m.content }));
     const messages = [SYSTEM_PROMPT, ...contextMessages];
     const controller = new AbortController();
     currentAbortController = controller;
     let success = false;
     let assistantMessage = '';
-
     try {
         const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
@@ -749,25 +702,20 @@ async function sendMessage() {
         if (e.name === 'AbortError') { /* отменено */ }
         else console.warn('Mistral error:', e);
     }
-
     stopThinkingAnimation();
-
     const msgIndex = chat.messages.findIndex(m => m.id === typingId);
     if (msgIndex !== -1) chat.messages.splice(msgIndex, 1);
-
     if (success) {
         addMessageToDOM('assistant', assistantMessage, true);
     } else {
         addMessageToDOM('assistant', '❌ Не удалось получить ответ. Попробуйте позже.', true);
     }
-
     isWaitingForResponse = false;
     currentAbortController = null;
     updateSendButtonState();
     renderChat();
     scrollToBottom();
 }
-
 function stopGeneration() {
     if (currentAbortController) {
         currentAbortController.abort();
@@ -775,7 +723,6 @@ function stopGeneration() {
         showToast('Генерация остановлена', '', 'info');
     }
 }
-
 async function regenerateResponse(msg) {
     const chat = chats.find(c => c.id === currentChatId);
     if (!chat) return;
@@ -831,6 +778,8 @@ function toggleSidebar() {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
         sidebar.classList.toggle('open');
+        // При открытом сайдбаре блокируем скролл боди
+        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
     } else {
         sidebarCollapsed = !sidebarCollapsed;
         sidebar.classList.toggle('collapsed', sidebarCollapsed);
@@ -838,12 +787,24 @@ function toggleSidebar() {
         if (collapsedActions) collapsedActions.classList.toggle('show', sidebarCollapsed);
     }
 }
+// Закрытие сайдбара при клике вне на мобилке
+document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+            sidebar.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    }
+});
 window.addEventListener('resize', () => {
     const sidebar = document.getElementById('sidebar');
     const titleBar = document.getElementById('titleBar');
     const collapsedActions = document.getElementById('collapsedActions');
     if (window.innerWidth > 768) {
         sidebar.classList.remove('open');
+        document.body.style.overflow = '';
         if (sidebarCollapsed) {
             sidebar.classList.add('collapsed');
             if (titleBar) titleBar.classList.add('collapsed');
@@ -931,10 +892,9 @@ function setupEventListeners() {
     document.getElementById('collapsedNewChat')?.addEventListener('click', createNewChat);
     document.getElementById('collapsedFolders')?.addEventListener('click', switchToFoldersView);
     document.getElementById('collapsedGenhab')?.addEventListener('click', () => showToast('🔮 В разработке', 'ГенХаб появится в следующем обновлении', 'info', 4000));
-
     document.getElementById('user-input')?.addEventListener('input', function() {
         this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         updateSendButtonState();
     });
     document.getElementById('user-input')?.addEventListener('keydown', e => {
@@ -942,10 +902,8 @@ function setupEventListeners() {
     });
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
     document.getElementById('history-search')?.addEventListener('input', renderHistory);
-
     document.getElementById('dropdown-discord')?.addEventListener('click', () => window.open('https://discord.gg/diamondshop', '_blank'));
     document.getElementById('dropdown-logout')?.addEventListener('click', logout);
-
     document.getElementById('userMenuBtn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('userDropdown').classList.toggle('show');
@@ -958,10 +916,8 @@ function setupEventListeners() {
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 (async function() {
     log('Загрузка...');
-
     const keyLoaded = await fetchMistralKey();
     if (!keyLoaded) console.warn('Не удалось загрузить API-ключ из Supabase');
-
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -971,9 +927,7 @@ function setupEventListeners() {
         chats = [];
         folders = [];
     }
-
     await showLoadingScreen();
-
     const ticketProcessed = await processDiamkeyReturn();
     if (currentUser && (ticketProcessed || !window.location.search.includes('ticket'))) {
         afterLogin();
@@ -981,14 +935,12 @@ function setupEventListeners() {
         document.getElementById('choiceScreen').style.display = 'flex';
         setupDiamkeyButton();
     }
-
     setupEventListeners();
     updateUserPanel();
     updateSendButtonState();
     if (chats.length) renderHistory();
     log('Готово');
 })();
-
 function afterLogin() {
     document.getElementById('choiceScreen').style.display = 'none';
     document.getElementById('mainUI').style.display = 'flex';

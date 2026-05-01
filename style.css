@@ -18,7 +18,7 @@
     --radius-xl: 28px;
     --radius-btn: 40px;
     --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    --collapsed-left-offset: 915px; /* регулируй здесь или через JS */
+    --collapsed-left-offset: 85px; /* скорректировано под твой выбор */
 }
 
 * {
@@ -107,28 +107,28 @@ body {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Панелька с кнопками при сворачивании сайдбара */
+/* Панелька с кнопками при сворачивании сайдбара — УМЕНЬШЕНА на ~5-7% */
 .collapsed-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;          /* уменьшен gap */
     background: var(--bg-tertiary);
-    border-radius: var(--radius-xl);
+    border-radius: calc(var(--radius-xl) * 0.95);
     border: 1px solid var(--border-color);
-    padding: 3px 6px;
+    padding: 2px 5px;   /* уменьшен padding */
     transition: all 0.3s ease;
     transform: scale(0.85);
     transform-origin: left center;
     opacity: 0;
     pointer-events: none;
     position: absolute;
-    left: var(--collapsed-left-offset, 64px);
+    left: var(--collapsed-left-offset, 85px);
     white-space: nowrap;
 }
 .collapsed-actions.show {
     opacity: 1;
     pointer-events: auto;
-    transform: scale(0.95);
+    transform: scale(0.9);
 }
 .title-bar.collapsed .logo-text {
     opacity: 0;
@@ -141,11 +141,20 @@ body {
     transform: scale(1);
 }
 
+/* Кнопки внутри панельки — тоже чуть меньше */
 .action-btn-icon {
-    width: 34px; height: 34px; background: transparent; border: none;
-    color: var(--text-secondary); cursor: pointer; display: flex;
-    align-items: center; justify-content: center; font-size: 16px;
-    transition: var(--transition); border-radius: 50%;
+    width: 30px;        /* было 34 */
+    height: 30px;       /* было 34 */
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;     /* было 16 */
+    transition: var(--transition);
+    border-radius: 50%;
 }
 .action-btn-icon:hover { background: var(--bg-hover); color: var(--text-primary); }
 
@@ -302,7 +311,7 @@ body {
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
-    margin-left: 4px;   /* небольшой отступ слева, чтобы текст не прилипал */
+    margin-left: 4px;
     padding-left: 4px;
 }
 .message.user .message-content {
@@ -588,7 +597,6 @@ textarea::placeholder { color: #6a6a6a; }
         transform: translateX(0);
         box-shadow: 2px 0 20px rgba(0,0,0,0.5);
     }
-    /* Скрываем коллапс-панель на мобилке */
     .collapsed-actions {
         display: none !important;
     }
@@ -675,7 +683,6 @@ textarea::placeholder { color: #6a6a6a; }
     .empty-input-area {
         max-width: 90%;
     }
-    /* Увеличиваем кнопки в сайдбаре для пальцев */
     .frame-btn {
         padding: 12px 0;
         font-size: 18px;

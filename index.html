@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>DIAMOND AI · Веб‑помощник</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="fulco.ico">
+    <link rel="apple-touch-icon" href="fulco.ico">
+    <meta name="theme-color" content="#1e1e1e">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
@@ -44,7 +47,7 @@
     <div class="main-ui" id="mainUI" style="display: none;">
         <header class="title-bar" id="titleBar">
             <div class="title-bar-left">
-                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Показать/скрыть панель">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Меню">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo-area" id="logoArea">
@@ -57,7 +60,7 @@
                     <button class="action-btn-icon" id="collapsedGenhab" title="ГенХаб"><i class="fas fa-magic"></i></button>
                 </div>
             </div>
-            <div class="window-controls" style="-webkit-app-region: no-drag;"></div>
+            <div class="window-controls"></div>
         </header>
 
         <div class="app-container">
@@ -100,9 +103,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="folders-page" id="foldersPage" style="display: none;">
-                    <!-- генерируется динамически -->
-                </div>
+                <div class="folders-page" id="foldersPage" style="display: none;"></div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
                     <div class="genhab-header">
                         <h1><i class="fas fa-magic"></i> ГенХаб</h1>

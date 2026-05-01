@@ -1,0 +1,22 @@
+{
+  "name": "Diamond AI",
+  "short_name": "DiamondAI",
+  "description": "Искусственный интеллект от Diamond",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1e1e1e",
+  "background_color": "#1e1e1e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "fulco.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "fulco.ico",
+      "sizes": "256x256",
+      "type": "image/x-icon"
+    }
+  ]
+}

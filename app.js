@@ -727,8 +727,7 @@
             btn.onclick = (e) => { e.stopPropagation(); showFolderSelectModal(btn.dataset.id); };
         });
     }
-
-    // ========== РЕНДЕР ЧАТА ==========
+        // ========== РЕНДЕР ЧАТА ==========
     function renderChat() {
         const chat = chats.find(c => c.id === currentChatId);
         if (!chat || !chat.messages || chat.messages.length === 0) {
@@ -964,7 +963,7 @@
         }
     }
 
-    // ========== DIAMKEY AUTH ==========
+    // ========== DIAMKEY AUTH (исправленная) ==========
     async function exchangeTicket(ticket) {
         const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
         try {
@@ -1021,15 +1020,18 @@
     async function processDiamkeyReturn() {
         const urlParams = new URLSearchParams(window.location.search);
         const ticket = urlParams.get('ticket');
+        console.log('[Diamkey] ticket from URL:', ticket);
         if (!ticket) return false;
         try {
             const user = await exchangeTicket(ticket);
+            console.log('[Diamkey] user received:', user);
             currentUser = user;
             localStorage.setItem('diamond_user', JSON.stringify(user));
             await loadChatsAndFolders();
             window.history.replaceState({}, document.title, window.location.pathname);
             return true;
         } catch (e) {
+            console.error('[Diamkey] exchange error:', e);
             showToast('Ошибка входа', e.message, 'error');
             return false;
         }
@@ -1048,10 +1050,49 @@
     function setupDiamkeyButton() {
         const btn = document.getElementById('diamkeyLoginBtn');
         if (!btn) return;
-        btn.onclick = () => {
+
+        // Удаляем старый обработчик, чтобы не навешивать несколько раз
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        const freshBtn = document.getElementById('diamkeyLoginBtn');
+        if (!freshBtn) return;
+
+        freshBtn.onclick = async (e) => {
+            e.preventDefault();
+            freshBtn.disabled = true;
+            freshBtn.style.opacity = '0.6';
+            freshBtn.style.cursor = 'wait';
+
             const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
             const appName = encodeURIComponent('Diamond AI');
-            window.location.href = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
+            const oauthUrl = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                await fetch('https://diamkey.ru', { method: 'HEAD', signal: controller.signal });
+                clearTimeout(timeoutId);
+            } catch (err) {
+                console.warn('DiamKey недоступен:', err);
+                showToast('Ошибка соединения', 'Сервер DiamKey не отвечает. Проверьте интернет.', 'error');
+                freshBtn.disabled = false;
+                freshBtn.style.opacity = '';
+                freshBtn.style.cursor = '';
+                return;
+            }
+
+            try {
+                window.location.href = oauthUrl;
+            } catch (e) {
+                console.warn('location.href failed, trying window.open', e);
+                window.open(oauthUrl, '_blank');
+            }
+
+            setTimeout(() => {
+                freshBtn.disabled = false;
+                freshBtn.style.opacity = '';
+                freshBtn.style.cursor = '';
+            }, 2000);
         };
     }
 

@@ -1045,45 +1045,35 @@
         showToast('Вы вышли', '', 'info');
     }
 
-    function setupDiamkeyButton() {
-        const btn = document.getElementById('diamkeyLoginBtn');
-        if (!btn) return;
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-        const freshBtn = document.getElementById('diamkeyLoginBtn');
-        if (!freshBtn) return;
-        freshBtn.onclick = async (e) => {
-            e.preventDefault();
-            freshBtn.disabled = true;
-            freshBtn.style.opacity = '0.6';
-            freshBtn.style.cursor = 'wait';
-            const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
-            const appName = encodeURIComponent('Diamond AI');
-            const oauthUrl = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                await fetch('https://diamkey.ru', { method: 'HEAD', signal: controller.signal });
-                clearTimeout(timeoutId);
-            } catch (err) {
-                showToast('Ошибка соединения', 'Сервер DiamKey не отвечает. Проверьте интернет.', 'error');
-                freshBtn.disabled = false;
-                freshBtn.style.opacity = '';
-                freshBtn.style.cursor = '';
-                return;
-            }
-            try {
-                window.location.href = oauthUrl;
-            } catch (e) {
-                window.open(oauthUrl, '_blank');
-            }
-            setTimeout(() => {
-                freshBtn.disabled = false;
-                freshBtn.style.opacity = '';
-                freshBtn.style.cursor = '';
-            }, 2000);
-        };
-    }
+function setupDiamkeyButton() {
+    const btn = document.getElementById('diamkeyLoginBtn');
+    if (!btn) return;
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    const freshBtn = document.getElementById('diamkeyLoginBtn');
+    if (!freshBtn) return;
+    freshBtn.onclick = (e) => {
+        e.preventDefault();
+        // Блокируем кнопку на 1 секунду, чтобы избежать повторных нажатий
+        freshBtn.disabled = true;
+        freshBtn.style.opacity = '0.6';
+        freshBtn.style.cursor = 'wait';
+
+        const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+        const appName = encodeURIComponent('Diamond AI');
+        const oauthUrl = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
+
+        // Просто перенаправляем пользователя
+        window.location.href = oauthUrl;
+
+        // Снимаем блокировку через 1 секунду (на случай, если переход не произошёл)
+        setTimeout(() => {
+            freshBtn.disabled = false;
+            freshBtn.style.opacity = '';
+            freshBtn.style.cursor = '';
+        }, 1000);
+    };
+}
 
     // ========== ВСПОМОГАТЕЛЬНЫЕ UI ==========
     function updateSendButtonState() {

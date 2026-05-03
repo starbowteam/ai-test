@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="256x256" href="logo.png">
     <meta name="theme-color" content="#1e1e1e">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=21">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     
     <!-- Supabase -->
@@ -91,13 +91,34 @@
                     <div class="input-area" id="inputArea" style="display: none;">
                         <div class="input-wrapper">
                             <textarea id="user-input" placeholder="Введите свой запрос..." rows="1"></textarea>
+                            <button class="web-search-btn" id="webSearchBtn" title="Поиск в интернете"><i class="fas fa-search"></i></button>
                             <button class="send-btn" id="send-btn" disabled><i class="fas fa-arrow-up"></i></button>
                         </div>
                     </div>
                 </div>
                 <div class="folders-page" id="foldersPage" style="display: none;"></div>
                 <div class="genhab-page" id="genhabPage" style="display: none;">
-                    <div class="genhab-header"><h1><i class="fas fa-magic"></i> ГенХаб</h1><p>Инструменты генерации (в разработке)</p></div>
+                    <div class="genhab-container">
+                        <div class="genhab-sidebar">
+                            <h2><i class="fas fa-magic"></i> ГенХаб</h2>
+                            <div class="genhab-history-list" id="genhabHistoryList"></div>
+                        </div>
+                        <div class="genhab-main">
+                            <div class="genhab-input-area">
+                                <textarea id="genhabPrompt" placeholder="Опишите изображение, которое хотите создать..."></textarea>
+                                <button id="genhabGenerateBtn" class="btn btn-primary"><i class="fas fa-wand-magic-sparkles"></i> Сгенерировать</button>
+                            </div>
+                            <div class="genhab-result" id="genhabResult">
+                                <div class="genhab-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <p>Здесь появится сгенерированное изображение</p>
+                                </div>
+                            </div>
+                            <div class="genhab-download" id="genhabDownload" style="display:none;">
+                                <button id="genhabDownloadBtn" class="btn btn-outline"><i class="fas fa-download"></i> Скачать</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -105,6 +126,6 @@
 
     <div id="toast-container" class="toast-container"></div>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

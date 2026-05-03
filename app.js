@@ -327,7 +327,7 @@ function logout() {
 
 // ========== АВАТАРЫ ==========
 function getBotAvatarHTML() {
-    return `<img src="fulco.ico" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    return `<img src="bots.png" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
 }
 
 function getUserAvatarHTML() {
@@ -1084,7 +1084,7 @@ function renderEmptyState() {
     const container = document.getElementById('messages-container');
     container.innerHTML = `
         <div class="empty-state">
-            <img src="fulco.ico" class="empty-logo" alt="Diamond AI">
+            <img src="logo.png" class="empty-logo" alt="Diamond AI">
             <div class="empty-text">Чем могу помочь?</div>
             <div class="empty-input-area">
                 <div class="input-wrapper">

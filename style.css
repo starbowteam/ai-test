@@ -1,4 +1,4 @@
-/* ========== БАЗОВЫЕ ПЕРЕМЕННЫЕ (без изменений) ========== */
+/* ========== БАЗОВЫЕ ПЕРЕМЕННЫЕ ========== */
 :root {
     --bg-primary: #1e1e1e;
     --bg-secondary: #252525;
@@ -25,7 +25,7 @@ body {
     overflow: hidden;
     background: var(--bg-primary);
     color: var(--text-primary);
-    touch-action: pan-y; /* ЗАПРЕТ МАСШТАБИРОВАНИЯ НА МОБИЛЬНЫХ УСТРОЙСТВАХ */
+    touch-action: pan-y;
 }
 
 ::-webkit-scrollbar {
@@ -853,6 +853,34 @@ textarea::placeholder {
     color: #aaa;
 }
 
+/* Кнопка Web Search */
+.web-search-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.web-search-btn.active {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: #5a5a5a;
+}
+
+.web-search-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
 /* ========== ПАПКИ ========== */
 .folders-page {
     padding: 24px;
@@ -1054,7 +1082,7 @@ textarea::placeholder {
     margin-top: 16px;
 }
 
-/* ========== ОБЩИЕ КНОПКИ (овальные, единые) ========== */
+/* ========== ОБЩИЕ КНОПКИ ========== */
 .btn {
     padding: 8px 18px;
     border-radius: 40px;
@@ -1242,7 +1270,147 @@ textarea::placeholder {
     }
 }
 
-/* ========== АДАПТИВ ========== */
+/* ========== ГЕНХАБ (НОВЫЙ РАЗДЕЛ) ========== */
+.genhab-page {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.genhab-container {
+    display: flex;
+    height: 100%;
+    background: var(--bg-primary);
+}
+
+.genhab-sidebar {
+    width: 260px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.genhab-sidebar h2 {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.genhab-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.genhab-history-item {
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+}
+
+.genhab-history-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-color);
+}
+
+.genhab-history-item img {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.genhab-history-item .history-prompt {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.genhab-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    overflow-y: auto;
+    align-items: center;
+}
+
+.genhab-input-area {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 30px;
+}
+
+.genhab-input-area textarea {
+    width: 100%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 14px 18px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    resize: none;
+    min-height: 60px;
+    outline: none;
+    margin-bottom: 12px;
+}
+
+.genhab-input-area textarea:focus {
+    border-color: #5a5a5a;
+}
+
+.genhab-result {
+    width: 100%;
+    max-width: 600px;
+    min-height: 300px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.genhab-placeholder {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.genhab-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.genhab-result img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.genhab-download {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Адаптив */
 @media (max-width: 768px) {
     .sidebar {
         position: absolute;
@@ -1265,11 +1433,14 @@ textarea::placeholder {
     .collapsed-actions {
         display: none !important;
     }
-    .logo-text {
-        font-size: 16px;
+    .genhab-container {
+        flex-direction: column;
     }
-    .title-bar-left {
-        gap: 8px;
+    .genhab-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        max-height: 200px;
     }
     .message {
         max-width: 95%;

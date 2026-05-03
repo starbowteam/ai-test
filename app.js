@@ -964,6 +964,29 @@
         }
     }
 
+    // ========== НОВАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПРОФИЛЯ ИЗ DIAMKEY ==========
+    async function refreshCurrentUser() {
+        if (!currentUser) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('login, name, avatar, description, fa_icon')
+                .eq('login', currentUser.login)
+                .single();
+            if (error) throw error;
+            if (data) {
+                currentUser.name = data.name || '';
+                currentUser.avatar = data.avatar || '';
+                currentUser.description = data.description || '';
+                currentUser.fa_icon = data.fa_icon || '';
+                localStorage.setItem('diamond_user', JSON.stringify(currentUser));
+                updateUserPanel();
+            }
+        } catch (e) {
+            console.warn('Не удалось обновить данные пользователя:', e);
+        }
+    }
+
     // ========== DIAMKEY AUTH ==========
     async function exchangeTicket(ticket) {
         const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
@@ -1026,6 +1049,7 @@
             const user = await exchangeTicket(ticket);
             currentUser = user;
             localStorage.setItem('diamond_user', JSON.stringify(user));
+            await refreshCurrentUser(); // сразу подтягиваем свежие данные
             await loadChatsAndFolders();
             window.history.replaceState({}, document.title, window.location.pathname);
             return true;
@@ -1045,35 +1069,37 @@
         showToast('Вы вышли', '', 'info');
     }
 
-function setupDiamkeyButton() {
-    const btn = document.getElementById('diamkeyLoginBtn');
-    if (!btn) return;
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    const freshBtn = document.getElementById('diamkeyLoginBtn');
-    if (!freshBtn) return;
-    freshBtn.onclick = (e) => {
-        e.preventDefault();
-        // Блокируем кнопку на 1 секунду, чтобы избежать повторных нажатий
-        freshBtn.disabled = true;
-        freshBtn.style.opacity = '0.6';
-        freshBtn.style.cursor = 'wait';
+    function setupDiamkeyButton() {
+        const btn = document.getElementById('diamkeyLoginBtn');
+        if (!btn) return;
 
-        const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
-        const appName = encodeURIComponent('Diamond AI');
-        const oauthUrl = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
+        // Убираем старые обработчики
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        const freshBtn = document.getElementById('diamkeyLoginBtn');
+        if (!freshBtn) return;
 
-        // Просто перенаправляем пользователя
-        window.location.href = oauthUrl;
+        freshBtn.onclick = (e) => {
+            e.preventDefault();
 
-        // Снимаем блокировку через 1 секунду (на случай, если переход не произошёл)
-        setTimeout(() => {
-            freshBtn.disabled = false;
-            freshBtn.style.opacity = '';
-            freshBtn.style.cursor = '';
-        }, 1000);
-    };
-}
+            if (freshBtn.disabled) return;
+            freshBtn.disabled = true;
+            freshBtn.style.opacity = '0.6';
+            freshBtn.style.cursor = 'wait';
+
+            const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+            const appName = encodeURIComponent('Diamond AI');
+            const oauthUrl = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=${appName}`;
+
+            window.location.href = oauthUrl;
+
+            setTimeout(() => {
+                freshBtn.disabled = false;
+                freshBtn.style.opacity = '';
+                freshBtn.style.cursor = '';
+            }, 2000);
+        };
+    }
 
     // ========== ВСПОМОГАТЕЛЬНЫЕ UI ==========
     function updateSendButtonState() {
@@ -1269,8 +1295,8 @@ function setupDiamkeyButton() {
         const savedUser = localStorage.getItem('diamond_user');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
-            // Загружаем чаты и папки для уже авторизованного пользователя (без тикета)
             await loadChatsAndFolders();
+            await refreshCurrentUser(); // обновляем профиль при загрузке
         }
         await showLoadingScreen();
         const ticketProcessed = await processDiamkeyReturn();

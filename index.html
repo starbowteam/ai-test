@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>DIAMOND AI · Веб‑помощник</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Favicon для ПК (ICO) -->
     <link rel="icon" type="image/x-icon" href="fulco.ico">
-    <link rel="apple-touch-icon" href="fulco.ico">
+    <!-- Для мобильных устройств (PNG) -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="logo.png">
     <meta name="theme-color" content="#1e1e1e">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="style.css?v=15">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     
     <!-- KaTeX + mhchem -->
@@ -30,7 +33,7 @@
     <div class="choice-screen" id="choiceScreen" style="display: none;">
         <div class="choice-container">
             <div class="logo">
-                <img src="fulco.ico" alt="logo" class="logo-img">
+                <img src="logo.png" alt="logo" class="logo-img">
                 <h1>DIAMOND AI</h1>
                 <p>Войдите через Diamkey, чтобы продолжить</p>
             </div>
@@ -44,7 +47,7 @@
             <div class="title-bar-left">
                 <button class="sidebar-toggle-btn" id="sidebarToggleBtn"><i class="fas fa-bars"></i></button>
                 <div class="logo-area">
-                    <img src="fulco.ico" alt="logo" class="logo-icon-img">
+                    <img src="logo.png" alt="logo" class="logo-icon-img">
                     <span class="logo-text">DIAMOND AI</span>
                 </div>
                 <div class="collapsed-actions" id="collapsedActions">
@@ -101,6 +104,6 @@
 
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=15"></script>
 </body>
 </html>

@@ -1318,3 +1318,52 @@
         log('Готово');
     })();
 })();
+
+    // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПРОФИЛЯ ПОСЛЕ ВХОДА И ПРИ КАЖДОМ ПОКАЗЕ ПАНЕЛИ
+    async function syncUserProfile() {
+        if (!currentUser) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('name, avatar, description, fa_icon')
+                .eq('login', currentUser.login)
+                .maybeSingle();
+            if (error) throw error;
+            if (data) {
+                let changed = false;
+                if (data.name !== currentUser.name) { currentUser.name = data.name; changed = true; }
+                if (data.avatar !== currentUser.avatar) { currentUser.avatar = data.avatar; changed = true; }
+                if (data.description !== currentUser.description) { currentUser.description = data.description; changed = true; }
+                if (data.fa_icon !== currentUser.fa_icon) { currentUser.fa_icon = data.fa_icon; changed = true; }
+                if (changed) {
+                    localStorage.setItem('diamond_user', JSON.stringify(currentUser));
+                    updateUserPanel();
+                    console.log('Профиль синхронизирован с DiamKey');
+                }
+            }
+        } catch (e) {
+            console.warn('Ошибка синхронизации профиля:', e);
+        }
+    }
+
+    // Заменяем старую updateUserPanel, чтобы она вызывала синхронизацию при каждом открытии
+    const originalUpdateUserPanel = updateUserPanel;
+    window.updateUserPanel = function() {
+        originalUpdateUserPanel();
+        if (currentUser) syncUserProfile();
+    };
+    updateUserPanel = window.updateUserPanel;
+
+    // Вызываем синхронизацию после входа
+    const originalProcessDiamkeyReturn = processDiamkeyReturn;
+    window.processDiamkeyReturn = async function() {
+        const result = await originalProcessDiamkeyReturn();
+        if (currentUser) await syncUserProfile();
+        return result;
+    };
+    processDiamkeyReturn = window.processDiamkeyReturn;
+
+    // И при загрузке, если пользователь уже был
+    if (currentUser) {
+        setTimeout(() => syncUserProfile(), 500);
+    }

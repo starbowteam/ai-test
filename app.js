@@ -1,4 +1,4 @@
-// ==================== DIAMOND AI — ПОЛНАЯ ВЕРСИЯ (БЕЗ СТРИМИНГА) ====================
+// ==================== DIAMOND AI — СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE ====================
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 
@@ -206,146 +206,86 @@ function enhanceCodeBlocks(container) {
     });
 }
 
-// ========== ХРАНИЛИЩЕ ==========
-function storageKey(base) {
-    return currentUser ? `${base}_${currentUser.login}` : base;
-}
+// ========== SUPABASE КЛИЕНТ ==========
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function saveChats() {
-    localStorage.setItem(storageKey('diamondChats'), JSON.stringify(chats));
-    renderHistory();
-}
-
-function saveFolders() {
-    localStorage.setItem(storageKey('diamondFolders'), JSON.stringify(folders));
-}
-
-function loadChatsForUser() {
-    const stored = localStorage.getItem(storageKey('diamondChats'));
-    if (stored) {
-        chats = JSON.parse(stored);
-        chats.forEach(c => {
-            if (!c.messages) c.messages = [];
-            if (!c.createdAt) c.createdAt = Date.now();
-            c.lastActivity = c.messages.length ? c.messages[c.messages.length - 1].timestamp : c.createdAt;
-        });
-        chats.sort((a, b) => b.lastActivity - a.lastActivity);
+// ========== РАБОТА С ЧАТАМИ И ПАПКАМИ В БД ==========
+async function loadChatsAndFolders() {
+    if (!currentUser) return;
+    try {
+        const [chatsRes, foldersRes] = await Promise.all([
+            supabase.from('diamond_chats').select('*').eq('user_login', currentUser.login),
+            supabase.from('diamond_folders').select('*').eq('user_login', currentUser.login)
+        ]);
+        if (chatsRes.error) throw chatsRes.error;
+        if (foldersRes.error) throw foldersRes.error;
+        chats = chatsRes.data.map(c => ({
+            ...c,
+            messages: c.messages || [],
+            pinned: c.pinned || false
+        }));
+        folders = foldersRes.data;
+        chats.sort((a, b) => b.last_activity - a.last_activity);
         currentChatId = chats.length ? chats[0].id : null;
-    } else {
-        chats = [];
-        currentChatId = null;
-    }
-    renderHistory();
-}
-
-function loadFoldersForUser() {
-    const stored = localStorage.getItem(storageKey('diamondFolders'));
-    folders = stored ? JSON.parse(stored) : [];
-}
-
-// ========== DIAMKEY AUTH ==========
-async function exchangeTicket(ticket) {
-    const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
-    try {
-        let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
-        if (!resp.ok) throw new Error('Ошибка поиска тикета');
-        const tickets = await resp.json();
-        if (!tickets.length) throw new Error('Тикет не найден или уже использован');
-        const ticketData = tickets[0];
-        resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
-            method: 'PATCH',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ used: true })
-        });
-        if (!resp.ok) throw new Error('Не удалось обновить тикет');
-        const login = ticketData.login;
-        if (!login) throw new Error('Тикет не содержит логин');
-        resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
-        if (!resp.ok) throw new Error('Ошибка получения пользователя');
-        const users = await resp.json();
-        if (!users.length) throw new Error('Пользователь не найден');
-        const user = users[0];
-        return {
-            login: user.login,
-            secretWord: user.secret_word,
-            name: user.name || '',
-            avatar: user.avatar || '',
-            description: user.description || '',
-            fa_icon: user.fa_icon || ''
-        };
+        renderHistory();
+        renderChat();
     } catch (e) {
-        console.error('Ошибка обмена тикета:', e);
-        throw e;
+        console.error('Ошибка загрузки чатов/папок:', e);
+        showToast('Ошибка', 'Не удалось загрузить чаты', 'error');
     }
 }
 
-async function fetchMistralKey() {
-    try {
-        const resp = await fetch(`${SUPABASE_URL}/rest/v1/service_config?id=eq.1`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-        });
-        if (!resp.ok) return false;
-        const data = await resp.json();
-        if (data && data.length > 0) {
-            mistralApiKey = data[0].mistral_api_key;
-            return true;
-        }
-        return false;
-    } catch (e) {
-        console.error('Ошибка загрузки API-ключа:', e);
-        return false;
+async function saveChatToSupabase(chat) {
+    if (!currentUser) return;
+    const { id, title, created_at, last_activity, pinned, folder_id, messages } = chat;
+    const { error } = await supabase.from('diamond_chats').upsert({
+        id,
+        user_login: currentUser.login,
+        title,
+        created_at,
+        last_activity,
+        pinned,
+        folder_id,
+        messages
+    });
+    if (error) {
+        console.error('Ошибка сохранения чата:', error);
+        showToast('Ошибка', 'Не удалось сохранить чат', 'error');
     }
 }
 
-async function processDiamkeyReturn() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const ticket = urlParams.get('ticket');
-    if (!ticket) return false;
-    try {
-        const user = await exchangeTicket(ticket);
-        currentUser = user;
-        localStorage.setItem('diamond_user', JSON.stringify(user));
-        loadChatsForUser();
-        loadFoldersForUser();
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return true;
-    } catch (e) {
-        showToast('Ошибка входа', e.message, 'error');
-        return false;
+async function saveFolderToSupabase(folder) {
+    if (!currentUser) return;
+    const { error } = await supabase.from('diamond_folders').upsert({
+        id: folder.id,
+        user_login: currentUser.login,
+        name: folder.name,
+        description: folder.description,
+        icon: folder.icon,
+        color: folder.color,
+        created_at: folder.createdAt || folder.created_at || Date.now()
+    });
+    if (error) {
+        console.error('Ошибка сохранения папки:', error);
+        showToast('Ошибка', 'Не удалось сохранить папку', 'error');
     }
 }
 
-function logout() {
-    currentUser = null;
-    mistralApiKey = '';
-    localStorage.removeItem('diamond_user');
-    document.getElementById('mainUI').style.display = 'none';
-    document.getElementById('choiceScreen').style.display = 'flex';
-    setupDiamkeyButton();
-    showToast('Вы вышли', '', 'info');
+async function deleteChatFromSupabase(chatId) {
+    if (!currentUser) return;
+    const { error } = await supabase.from('diamond_chats').delete().eq('id', chatId).eq('user_login', currentUser.login);
+    if (error) {
+        console.error('Ошибка удаления чата:', error);
+        showToast('Ошибка', 'Не удалось удалить чат', 'error');
+    }
 }
 
-// ========== АВАТАРЫ ==========
-function getBotAvatarHTML() {
-    return `<img src="bots.png" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-}
-
-function getUserAvatarHTML() {
-    if (currentUser && currentUser.avatar) return `<img src="${currentUser.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
-    if (currentUser && currentUser.fa_icon) return `<i class="${currentUser.fa_icon}"></i>`;
-    return '<i class="fas fa-user"></i>';
-}
-
-function updateUserPanel() {
-    const nameSpan = document.getElementById('userNameDisplay');
-    const avatarImg = document.getElementById('userAvatarImg');
-    if (currentUser) {
-        const icon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="margin-right:6px;"></i>` : '';
-        if (nameSpan) nameSpan.innerHTML = `${icon}${currentUser.name || currentUser.login}`;
-        if (avatarImg) avatarImg.src = currentUser.avatar || '';
-    } else {
-        if (nameSpan) nameSpan.textContent = 'Пользователь';
-        if (avatarImg) avatarImg.src = '';
+async function deleteFolderFromSupabase(folderId) {
+    if (!currentUser) return;
+    const { error } = await supabase.from('diamond_folders').delete().eq('id', folderId).eq('user_login', currentUser.login);
+    if (error) {
+        console.error('Ошибка удаления папки:', error);
+        showToast('Ошибка', 'Не удалось удалить папку', 'error');
     }
 }
 
@@ -354,42 +294,46 @@ function generateChatTitle(msg) {
     return msg.length > 50 ? msg.slice(0, 47) + '...' : msg;
 }
 
-function createNewChat() {
+async function createNewChat() {
     renderEmptyState();
     currentChatId = null;
     showToast('Новый диалог', 'Напишите сообщение', 'info');
 }
 
-function deleteChat(id) {
-    chats = chats.filter(c => c.id !== id);
-    if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null;
-    saveChats();
-    renderHistory();
-    renderChat();
-    if (chats.length === 0) renderEmptyState();
+async function deleteChat(id) {
+    const chat = chats.find(c => c.id === id);
+    if (chat && confirm('Удалить чат?')) {
+        await deleteChatFromSupabase(id);
+        chats = chats.filter(c => c.id !== id);
+        if (currentChatId === id) currentChatId = chats.length ? chats[0].id : null;
+        renderHistory();
+        renderChat();
+        if (chats.length === 0) renderEmptyState();
+        showToast('Чат удалён', '', 'success');
+    }
 }
 
-function switchChat(id) {
+async function switchChat(id) {
     currentChatId = id;
     renderChat();
     renderHistory();
 }
 
-function togglePin(id) {
+async function togglePin(id) {
     const chat = chats.find(c => c.id === id);
     if (chat) {
         chat.pinned = !chat.pinned;
-        saveChats();
+        await saveChatToSupabase(chat);
         renderHistory();
         showToast(chat.pinned ? 'Закреплён' : 'Откреплён', '', 'success');
     }
 }
 
-function renameChat(id, newTitle) {
+async function renameChat(id, newTitle) {
     const chat = chats.find(c => c.id === id);
     if (chat) {
         chat.title = newTitle;
-        saveChats();
+        await saveChatToSupabase(chat);
         renderHistory();
         showToast('Чат переименован', newTitle, 'success');
     }
@@ -420,9 +364,9 @@ function showRenameModal(chatId) {
     input.focus();
     const close = () => modal.remove();
     modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', close));
-    modal.querySelector('#rename-confirm').onclick = () => {
+    modal.querySelector('#rename-confirm').onclick = async () => {
         const newName = input.value.trim();
-        if (newName) renameChat(chatId, newName);
+        if (newName) await renameChat(chatId, newName);
         close();
     };
     input.onkeydown = (e) => {
@@ -436,55 +380,57 @@ function showRenameModal(chatId) {
 }
 
 // ========== ПАПКИ ==========
-function loadFolders() {
-    loadFoldersForUser();
-}
-
-function createFolder(name, desc, icon, color) {
-    folders.push({
-        id: Date.now().toString(),
+async function createFolder(name, desc, icon, color) {
+    const id = Date.now().toString();
+    const folder = {
+        id,
         name: name.trim(),
         description: desc || '',
         icon: icon || 'fa-folder',
         color: color || '#95a5a6',
         createdAt: Date.now()
-    });
-    saveFolders();
+    };
+    folders.push(folder);
+    await saveFolderToSupabase(folder);
     renderFoldersPage();
     showToast('Папка создана', name, 'success');
 }
 
-function updateFolder(id, name, desc, icon, color) {
+async function updateFolder(id, name, desc, icon, color) {
     const f = folders.find(f => f.id === id);
     if (f) {
         f.name = name.trim();
         f.description = desc || '';
         f.icon = icon || 'fa-folder';
         f.color = color || '#95a5a6';
-        saveFolders();
+        await saveFolderToSupabase(f);
         renderFoldersPage();
         showToast('Папка обновлена', name, 'success');
     }
 }
 
-function deleteFolder(id) {
+async function deleteFolder(id) {
     const f = folders.find(f => f.id === id);
     if (f && confirm('Удалить папку? Чаты будут перемещены в корень.')) {
+        await deleteFolderFromSupabase(id);
         folders = folders.filter(f => f.id !== id);
-        chats.forEach(c => { if (c.folderId === id) c.folderId = null; });
-        saveFolders();
-        saveChats();
+        for (const chat of chats) {
+            if (chat.folder_id === id) {
+                chat.folder_id = null;
+                await saveChatToSupabase(chat);
+            }
+        }
         renderFoldersPage();
         renderHistory();
         showToast('Папка удалена', f.name, 'info');
     }
 }
 
-function moveChatToFolder(chatId, folderId) {
+async function moveChatToFolder(chatId, folderId) {
     const chat = chats.find(c => c.id === chatId);
     if (chat) {
-        chat.folderId = folderId;
-        saveChats();
+        chat.folder_id = folderId || null;
+        await saveChatToSupabase(chat);
         renderHistory();
         renderFoldersPage();
         showToast('Чат перемещён', folderId ? 'В папку' : 'Из папки', 'success');
@@ -563,15 +509,15 @@ function showFolderEditModal(folder = null) {
     
     const close = () => modal.remove();
     modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', close));
-    modal.querySelector('#save-folder-btn').onclick = () => {
+    modal.querySelector('#save-folder-btn').onclick = async () => {
         const name = modal.querySelector('#folder-name').value.trim();
         if (!name) {
             showToast('Ошибка', 'Введите название', 'warning');
             return;
         }
         const desc = modal.querySelector('#folder-description').value;
-        if (isEdit) updateFolder(folder.id, name, desc, selectedIcon, selectedColor);
-        else createFolder(name, desc, selectedIcon, selectedColor);
+        if (isEdit) await updateFolder(folder.id, name, desc, selectedIcon, selectedColor);
+        else await createFolder(name, desc, selectedIcon, selectedColor);
         close();
     };
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
@@ -650,7 +596,7 @@ function renderFoldersPage() {
             <div class="folder-info">
                 <div class="folder-name"><span style="color:${f.color}">${escapeHtml(f.name)}</span></div>
                 <div class="folder-description">${escapeHtml(f.description) || 'Нет описания'}</div>
-                <div class="folder-stats">${chats.filter(c => c.folderId === f.id).length} чатов</div>
+                <div class="folder-stats">${chats.filter(c => c.folder_id === f.id).length} чатов</div>
             </div>
             <div class="folder-actions">
                 <button class="view-folder-chats" data-id="${f.id}" title="Чаты"><i class="fas fa-comments"></i></button>
@@ -685,7 +631,7 @@ function renderFoldersPage() {
 }
 
 function showFolderChatsModal(folder) {
-    const chatsInFolder = chats.filter(c => c.folderId === folder.id);
+    const chatsInFolder = chats.filter(c => c.folder_id === folder.id);
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
@@ -738,9 +684,9 @@ function renderHistory() {
     const searchTerm = document.getElementById('history-search')?.value.toLowerCase() || '';
     let filtered = chats.filter(c => c.title.toLowerCase().includes(searchTerm));
     const groups = { 'Сегодня': [], 'Вчера': [], 'Более 2-х дней назад': [] };
-    filtered.forEach(c => groups[getDateGroup(c.lastActivity || c.createdAt)].push(c));
+    filtered.forEach(c => groups[getDateGroup(c.last_activity || c.created_at)].push(c));
     for (const g in groups) {
-        groups[g].sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1) || (b.lastActivity - a.lastActivity));
+        groups[g].sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1) || (b.last_activity - a.last_activity));
     }
     
     let html = '';
@@ -795,9 +741,9 @@ function renderChat() {
     let lastDate = null;
     
     chat.messages.forEach((msg, idx) => {
-        const date = new Date(msg.timestamp || chat.createdAt).toDateString();
+        const date = new Date(msg.timestamp || chat.created_at).toDateString();
         if (date !== lastDate) {
-            container.innerHTML += `<div class="date-divider"><span>${formatDateHeader(msg.timestamp || chat.createdAt)}</span></div>`;
+            container.innerHTML += `<div class="date-divider"><span>${formatDateHeader(msg.timestamp || chat.created_at)}</span></div>`;
             lastDate = date;
         }
         const messageDiv = document.createElement('div');
@@ -860,7 +806,7 @@ function formatTime(ts) {
     return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 }
 
-function addMessageToDOM(role, content, save = true) {
+async function addMessageToDOM(role, content, save = true) {
     const timestamp = Date.now();
     const messageId = timestamp + Math.random();
     if (save) {
@@ -868,11 +814,11 @@ function addMessageToDOM(role, content, save = true) {
         if (chat) {
             if (!chat.messages) chat.messages = [];
             chat.messages.push({ id: messageId, role, content, timestamp, isTyping: false });
-            chat.lastActivity = timestamp;
+            chat.last_activity = timestamp;
             if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1) {
                 chat.title = generateChatTitle(content);
             }
-            saveChats();
+            await saveChatToSupabase(chat);
         }
     }
     renderChat();
@@ -895,19 +841,19 @@ async function sendMessage() {
             id: now.toString(),
             title: generateChatTitle(text),
             messages: [],
-            createdAt: now,
-            lastActivity: now,
+            created_at: now,
+            last_activity: now,
             pinned: false,
-            folderId: null
+            folder_id: null
         };
         chats.unshift(chat);
         currentChatId = chat.id;
-        saveChats();
+        await saveChatToSupabase(chat);
         renderHistory();
         document.getElementById('inputArea').style.display = 'flex';
     }
     
-    addMessageToDOM('user', text, true);
+    await addMessageToDOM('user', text, true);
     document.getElementById('user-input').value = '';
     const emptyInput = document.getElementById('empty-input');
     if (emptyInput) emptyInput.value = '';
@@ -957,9 +903,9 @@ async function sendMessage() {
     if (msgIndex !== -1) chat.messages.splice(msgIndex, 1);
     
     if (success && assistantMessage) {
-        addMessageToDOM('assistant', assistantMessage, true);
+        await addMessageToDOM('assistant', assistantMessage, true);
     } else {
-        addMessageToDOM('assistant', '❌ Не удалось получить ответ. Попробуйте позже.', true);
+        await addMessageToDOM('assistant', '❌ Не удалось получить ответ. Попробуйте позже.', true);
     }
     
     isWaitingForResponse = false;
@@ -983,7 +929,7 @@ async function regenerateResponse(msg) {
     const idx = chat.messages.findIndex(m => m === msg);
     if (idx !== -1) {
         chat.messages.splice(idx, 1);
-        saveChats();
+        await saveChatToSupabase(chat);
         renderChat();
     }
     const lastUser = [...chat.messages].reverse().find(m => m.role === 'user');
@@ -993,7 +939,111 @@ async function regenerateResponse(msg) {
     }
 }
 
-// ========== ЭКРАН ВХОДА ==========
+// ========== АВАТАРЫ ==========
+function getBotAvatarHTML() {
+    return `<img src="bots.png" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+}
+
+function getUserAvatarHTML() {
+    if (currentUser && currentUser.avatar) return `<img src="${currentUser.avatar}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+    if (currentUser && currentUser.fa_icon) return `<i class="${currentUser.fa_icon}"></i>`;
+    return '<i class="fas fa-user"></i>';
+}
+
+function updateUserPanel() {
+    const nameSpan = document.getElementById('userNameDisplay');
+    const avatarImg = document.getElementById('userAvatarImg');
+    if (currentUser) {
+        const icon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="margin-right:6px;"></i>` : '';
+        if (nameSpan) nameSpan.innerHTML = `${icon}${currentUser.name || currentUser.login}`;
+        if (avatarImg) avatarImg.src = currentUser.avatar || '';
+    } else {
+        if (nameSpan) nameSpan.textContent = 'Пользователь';
+        if (avatarImg) avatarImg.src = '';
+    }
+}
+
+// ========== DIAMKEY AUTH (СТАРЫЙ КОД, ДОЛЖЕН РАБОТАТЬ) ==========
+async function exchangeTicket(ticket) {
+    const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
+    try {
+        let resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?ticket=eq.${ticket}&used=eq.false`, { headers });
+        if (!resp.ok) throw new Error('Ошибка поиска тикета');
+        const tickets = await resp.json();
+        if (!tickets.length) throw new Error('Тикет не найден или уже использован');
+        const ticketData = tickets[0];
+        resp = await fetch(`${SUPABASE_URL}/rest/v1/oauth_tickets?id=eq.${ticketData.id}`, {
+            method: 'PATCH',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ used: true })
+        });
+        if (!resp.ok) throw new Error('Не удалось обновить тикет');
+        const login = ticketData.login;
+        if (!login) throw new Error('Тикет не содержит логин');
+        resp = await fetch(`${SUPABASE_URL}/rest/v1/users?login=eq.${login}`, { headers });
+        if (!resp.ok) throw new Error('Ошибка получения пользователя');
+        const users = await resp.json();
+        if (!users.length) throw new Error('Пользователь не найден');
+        const user = users[0];
+        return {
+            login: user.login,
+            secretWord: user.secret_word,
+            name: user.name || '',
+            avatar: user.avatar || '',
+            description: user.description || '',
+            fa_icon: user.fa_icon || ''
+        };
+    } catch (e) {
+        console.error('Ошибка обмена тикета:', e);
+        throw e;
+    }
+}
+
+async function fetchMistralKey() {
+    try {
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/service_config?id=eq.1`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+        if (!resp.ok) return false;
+        const data = await resp.json();
+        if (data && data.length > 0) {
+            mistralApiKey = data[0].mistral_api_key;
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.error('Ошибка загрузки API-ключа:', e);
+        return false;
+    }
+}
+
+async function processDiamkeyReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticket = urlParams.get('ticket');
+    if (!ticket) return false;
+    try {
+        const user = await exchangeTicket(ticket);
+        currentUser = user;
+        localStorage.setItem('diamond_user', JSON.stringify(user));
+        await loadChatsAndFolders();
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return true;
+    } catch (e) {
+        showToast('Ошибка входа', e.message, 'error');
+        return false;
+    }
+}
+
+function logout() {
+    currentUser = null;
+    mistralApiKey = '';
+    localStorage.removeItem('diamond_user');
+    document.getElementById('mainUI').style.display = 'none';
+    document.getElementById('choiceScreen').style.display = 'flex';
+    setupDiamkeyButton();
+    showToast('Вы вышли', '', 'info');
+}
+
 function setupDiamkeyButton() {
     const btn = document.getElementById('diamkeyLoginBtn');
     if (!btn) return;
@@ -1044,7 +1094,6 @@ function toggleSidebar() {
     }
 }
 
-// Закрытие сайдбара при клике вне на мобилке
 document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');
@@ -1176,7 +1225,6 @@ function setupEventListeners() {
     document.getElementById('dropdown-discord')?.addEventListener('click', () => {
         window.open('https://discord.gg/diamondshop', '_blank');
     });
-    // Новая кнопка DiamKey
     document.getElementById('dropdown-diamkey')?.addEventListener('click', () => {
         window.open('https://diamkey.ru', '_blank');
     });
@@ -1197,24 +1245,24 @@ function setupEventListeners() {
 (async function() {
     log('Загрузка...');
     
-    const keyLoaded = await fetchMistralKey();
-    if (!keyLoaded) console.warn('Не удалось загрузить API-ключ из Supabase');
+    await fetchMistralKey();
     
     const savedUser = localStorage.getItem('diamond_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        loadChatsForUser();
-        loadFoldersForUser();
-    } else {
-        chats = [];
-        folders = [];
+        // чаты и папки будут загружены после processDiamkeyReturn или сразу если нет тикета
     }
     
     await showLoadingScreen();
     
     const ticketProcessed = await processDiamkeyReturn();
     if (currentUser && (ticketProcessed || !window.location.search.includes('ticket'))) {
-        afterLogin();
+        // уже загружены внутри processDiamkeyReturn через loadChatsAndFolders
+        document.getElementById('choiceScreen').style.display = 'none';
+        document.getElementById('mainUI').style.display = 'flex';
+        setTimeout(() => document.getElementById('mainUI').classList.add('visible'), 50);
+        updateUserPanel();
+        if (chats.length === 0) renderEmptyState(); else renderChat();
     } else if (!currentUser) {
         document.getElementById('choiceScreen').style.display = 'flex';
         setupDiamkeyButton();
@@ -1228,12 +1276,3 @@ function setupEventListeners() {
     document.documentElement.style.setProperty('--collapsed-left-offset', '85px');
     log('Готово');
 })();
-
-function afterLogin() {
-    document.getElementById('choiceScreen').style.display = 'none';
-    document.getElementById('mainUI').style.display = 'flex';
-    setTimeout(() => document.getElementById('mainUI').classList.add('visible'), 50);
-    updateUserPanel();
-    if (chats.length === 0) renderEmptyState();
-    else renderChat();
-}

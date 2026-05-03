@@ -1,4 +1,4 @@
-// ==================== DIAMOND AI — СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE (ИСПРАВЛЕННЫЙ) ====================
+// ==================== DIAMOND AI — СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE + ОБНОВЛЕНИЕ ПРОФИЛЯ ====================
 (function() {
     const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
@@ -209,6 +209,33 @@
 
     // ========== SUPABASE КЛИЕНТ ==========
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ========== НОВАЯ ФУНКЦИЯ: ОБНОВЛЕНИЕ ПРОФИЛЯ ИЗ DIAMKEY ==========
+    async function refreshUserProfile() {
+        if (!currentUser) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('name, avatar, description, fa_icon')
+                .eq('login', currentUser.login)
+                .maybeSingle();
+            if (error) throw error;
+            if (data) {
+                let changed = false;
+                if (data.name !== currentUser.name) { currentUser.name = data.name; changed = true; }
+                if (data.avatar !== currentUser.avatar) { currentUser.avatar = data.avatar; changed = true; }
+                if (data.description !== currentUser.description) { currentUser.description = data.description; changed = true; }
+                if (data.fa_icon !== currentUser.fa_icon) { currentUser.fa_icon = data.fa_icon; changed = true; }
+                if (changed) {
+                    localStorage.setItem('diamond_user', JSON.stringify(currentUser));
+                    updateUserPanel();
+                    console.log('[PROFILE] Обновлён из DiamKey');
+                }
+            }
+        } catch (e) {
+            console.warn('[PROFILE] Ошибка синхронизации:', e);
+        }
+    }
 
     // ========== РАБОТА С ЧАТАМИ И ПАПКАМИ В БД ==========
     async function loadChatsAndFolders() {
@@ -964,29 +991,6 @@
         }
     }
 
-    // ========== НОВАЯ ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПРОФИЛЯ ИЗ DIAMKEY ==========
-    async function refreshCurrentUser() {
-        if (!currentUser) return;
-        try {
-            const { data, error } = await supabaseClient
-                .from('users')
-                .select('login, name, avatar, description, fa_icon')
-                .eq('login', currentUser.login)
-                .single();
-            if (error) throw error;
-            if (data) {
-                currentUser.name = data.name || '';
-                currentUser.avatar = data.avatar || '';
-                currentUser.description = data.description || '';
-                currentUser.fa_icon = data.fa_icon || '';
-                localStorage.setItem('diamond_user', JSON.stringify(currentUser));
-                updateUserPanel();
-            }
-        } catch (e) {
-            console.warn('Не удалось обновить данные пользователя:', e);
-        }
-    }
-
     // ========== DIAMKEY AUTH ==========
     async function exchangeTicket(ticket) {
         const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
@@ -1049,7 +1053,7 @@
             const user = await exchangeTicket(ticket);
             currentUser = user;
             localStorage.setItem('diamond_user', JSON.stringify(user));
-            await refreshCurrentUser(); // сразу подтягиваем свежие данные
+            await refreshUserProfile();    // <-- ОБНОВЛЕНИЕ ПРОФИЛЯ ПОСЛЕ ВХОДА
             await loadChatsAndFolders();
             window.history.replaceState({}, document.title, window.location.pathname);
             return true;
@@ -1073,7 +1077,6 @@
         const btn = document.getElementById('diamkeyLoginBtn');
         if (!btn) return;
 
-        // Убираем старые обработчики
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         const freshBtn = document.getElementById('diamkeyLoginBtn');
@@ -1081,7 +1084,6 @@
 
         freshBtn.onclick = (e) => {
             e.preventDefault();
-
             if (freshBtn.disabled) return;
             freshBtn.disabled = true;
             freshBtn.style.opacity = '0.6';
@@ -1296,7 +1298,7 @@
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             await loadChatsAndFolders();
-            await refreshCurrentUser(); // обновляем профиль при загрузке
+            await refreshUserProfile();   // <-- ОБНОВЛЯЕМ ПРОФИЛЬ ПРИ СТАРТЕ
         }
         await showLoadingScreen();
         const ticketProcessed = await processDiamkeyReturn();
@@ -1318,52 +1320,3 @@
         log('Готово');
     })();
 })();
-
-    // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПРОФИЛЯ ПОСЛЕ ВХОДА И ПРИ КАЖДОМ ПОКАЗЕ ПАНЕЛИ
-    async function syncUserProfile() {
-        if (!currentUser) return;
-        try {
-            const { data, error } = await supabaseClient
-                .from('users')
-                .select('name, avatar, description, fa_icon')
-                .eq('login', currentUser.login)
-                .maybeSingle();
-            if (error) throw error;
-            if (data) {
-                let changed = false;
-                if (data.name !== currentUser.name) { currentUser.name = data.name; changed = true; }
-                if (data.avatar !== currentUser.avatar) { currentUser.avatar = data.avatar; changed = true; }
-                if (data.description !== currentUser.description) { currentUser.description = data.description; changed = true; }
-                if (data.fa_icon !== currentUser.fa_icon) { currentUser.fa_icon = data.fa_icon; changed = true; }
-                if (changed) {
-                    localStorage.setItem('diamond_user', JSON.stringify(currentUser));
-                    updateUserPanel();
-                    console.log('Профиль синхронизирован с DiamKey');
-                }
-            }
-        } catch (e) {
-            console.warn('Ошибка синхронизации профиля:', e);
-        }
-    }
-
-    // Заменяем старую updateUserPanel, чтобы она вызывала синхронизацию при каждом открытии
-    const originalUpdateUserPanel = updateUserPanel;
-    window.updateUserPanel = function() {
-        originalUpdateUserPanel();
-        if (currentUser) syncUserProfile();
-    };
-    updateUserPanel = window.updateUserPanel;
-
-    // Вызываем синхронизацию после входа
-    const originalProcessDiamkeyReturn = processDiamkeyReturn;
-    window.processDiamkeyReturn = async function() {
-        const result = await originalProcessDiamkeyReturn();
-        if (currentUser) await syncUserProfile();
-        return result;
-    };
-    processDiamkeyReturn = window.processDiamkeyReturn;
-
-    // И при загрузке, если пользователь уже был
-    if (currentUser) {
-        setTimeout(() => syncUserProfile(), 500);
-    }

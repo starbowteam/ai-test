@@ -1,4 +1,4 @@
-// ==================== DIAMOND AI — СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE + ОБНОВЛЕНИЕ ПРОФИЛЯ ====================
+// ==================== DIAMOND AI — ПОЛНАЯ СИНХРОНИЗАЦИЯ + ПРОФИЛЬ ====================
 (function() {
     const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
@@ -209,33 +209,6 @@
 
     // ========== SUPABASE КЛИЕНТ ==========
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ========== НОВАЯ ФУНКЦИЯ: ОБНОВЛЕНИЕ ПРОФИЛЯ ИЗ DIAMKEY ==========
-    async function refreshUserProfile() {
-        if (!currentUser) return;
-        try {
-            const { data, error } = await supabaseClient
-                .from('users')
-                .select('name, avatar, description, fa_icon')
-                .eq('login', currentUser.login)
-                .maybeSingle();
-            if (error) throw error;
-            if (data) {
-                let changed = false;
-                if (data.name !== currentUser.name) { currentUser.name = data.name; changed = true; }
-                if (data.avatar !== currentUser.avatar) { currentUser.avatar = data.avatar; changed = true; }
-                if (data.description !== currentUser.description) { currentUser.description = data.description; changed = true; }
-                if (data.fa_icon !== currentUser.fa_icon) { currentUser.fa_icon = data.fa_icon; changed = true; }
-                if (changed) {
-                    localStorage.setItem('diamond_user', JSON.stringify(currentUser));
-                    updateUserPanel();
-                    console.log('[PROFILE] Обновлён из DiamKey');
-                }
-            }
-        } catch (e) {
-            console.warn('[PROFILE] Ошибка синхронизации:', e);
-        }
-    }
 
     // ========== РАБОТА С ЧАТАМИ И ПАПКАМИ В БД ==========
     async function loadChatsAndFolders() {
@@ -991,6 +964,33 @@
         }
     }
 
+    // ========== НОВАЯ ФУНКЦИЯ: ОБНОВЛЕНИЕ ПРОФИЛЯ ИЗ DIAMKEY ==========
+    async function refreshUserProfile() {
+        if (!currentUser) return;
+        try {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('name, avatar, description, fa_icon')
+                .eq('login', currentUser.login)
+                .maybeSingle();
+            if (error) throw error;
+            if (data) {
+                let changed = false;
+                if (data.name !== currentUser.name) { currentUser.name = data.name; changed = true; }
+                if (data.avatar !== currentUser.avatar) { currentUser.avatar = data.avatar; changed = true; }
+                if (data.description !== currentUser.description) { currentUser.description = data.description; changed = true; }
+                if (data.fa_icon !== currentUser.fa_icon) { currentUser.fa_icon = data.fa_icon; changed = true; }
+                if (changed) {
+                    localStorage.setItem('diamond_user', JSON.stringify(currentUser));
+                    updateUserPanel();
+                    console.log('[PROFILE] Обновлён из DiamKey');
+                }
+            }
+        } catch (e) {
+            console.warn('[PROFILE] Ошибка синхронизации:', e);
+        }
+    }
+
     // ========== DIAMKEY AUTH ==========
     async function exchangeTicket(ticket) {
         const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` };
@@ -1053,7 +1053,7 @@
             const user = await exchangeTicket(ticket);
             currentUser = user;
             localStorage.setItem('diamond_user', JSON.stringify(user));
-            await refreshUserProfile();    // <-- ОБНОВЛЕНИЕ ПРОФИЛЯ ПОСЛЕ ВХОДА
+            await refreshUserProfile();    // ОБНОВЛЯЕМ ПРОФИЛЬ
             await loadChatsAndFolders();
             window.history.replaceState({}, document.title, window.location.pathname);
             return true;
@@ -1298,7 +1298,7 @@
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             await loadChatsAndFolders();
-            await refreshUserProfile();   // <-- ОБНОВЛЯЕМ ПРОФИЛЬ ПРИ СТАРТЕ
+            await refreshUserProfile();   // обновляем профиль при старте
         }
         await showLoadingScreen();
         const ticketProcessed = await processDiamkeyReturn();

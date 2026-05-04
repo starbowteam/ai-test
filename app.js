@@ -1,14 +1,14 @@
-// ==================== DIAMOND AI — ПОЛНАЯ СИНХРОНИЗАЦИЯ + ПРОФИЛЬ + WEB SEARCH + MEMORIES + GENHAB ====================
+// ==================== DIAMOND AI — ПОЛНАЯ СИНХРОНИЗАЦИЯ + ПРОФИЛЬ + WEB SEARCH + MEMORIES + GENHAB (REPLICATE) ====================
 (function() {
     const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 
-    // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
     let currentChatId = null;
     let chats = [];
     let folders = [];
     let currentUser = null;
     let mistralApiKey = '';
+    let replicateApiKey = ''; // ← новый ключ Replicate
     let isWaitingForResponse = false;
     let currentAbortController = null;
     let lastNotificationTime = 0;
@@ -20,7 +20,7 @@
     let thinkingTimer = null;
     let thinkingDots = 0;
     let webSearchEnabled = false;
-    let genhabHistory = []; // локальная история изображений
+    let genhabHistory = [];
 
     const placeholderTexts = [
         "Что расскажешь о себе?",
@@ -84,10 +84,7 @@
     }
 
     function stopThinkingAnimation() {
-        if (thinkingTimer) {
-            clearInterval(thinkingTimer);
-            thinkingTimer = null;
-        }
+        if (thinkingTimer) { clearInterval(thinkingTimer); thinkingTimer = null; }
     }
 
     // ===== LaTeX РЕНДЕР =====
@@ -700,7 +697,7 @@
         return messageId;
     }
 
-    // ===== ОТПРАВКА СООБЩЕНИЯ (с Web Search и Memories) =====
+    // ===== ОТПРАВКА СООБЩЕНИЯ =====
     async function sendMessage() {
         const text = document.getElementById('user-input').value.trim();
         if (!text || isWaitingForResponse) return;
@@ -754,7 +751,6 @@
                 body: JSON.stringify({ model: AI_MODEL, messages, temperature: 0.5, max_tokens: 2000, tools, tool_choice: tools ? "auto" : undefined }),
                 signal: controller.signal
             });
-
             if (resp.ok) {
                 const data = await resp.json();
                 assistantMessage = data.choices[0].message.content || '';
@@ -806,10 +802,7 @@
         scrollToBottom();
     }
 
-    function performWebSearch(query) {
-        // Возвращаем заглушку, Mistral сам выполнит поиск
-        return { results: [] };
-    }
+    function performWebSearch(query) { return { results: [] }; }
 
     function stopGeneration() {
         if (currentAbortController) { currentAbortController.abort(); stopThinkingAnimation(); showToast('Генерация остановлена', '', 'info'); }
@@ -865,10 +858,7 @@
             const users = await resp.json();
             if (!users.length) throw new Error('Пользователь не найден');
             const user = users[0];
-            return {
-                login: user.login, secretWord: user.secret_word, name: user.name || '',
-                avatar: user.avatar || '', description: user.description || '', fa_icon: user.fa_icon || ''
-            };
+            return { login: user.login, secretWord: user.secret_word, name: user.name || '', avatar: user.avatar || '', description: user.description || '', fa_icon: user.fa_icon || '' };
         } catch (e) { console.error('Ошибка обмена тикета:', e); throw e; }
     }
 
@@ -879,7 +869,11 @@
             });
             if (!resp.ok) return false;
             const data = await resp.json();
-            if (data && data.length > 0) { mistralApiKey = data[0].mistral_api_key; return true; }
+            if (data && data.length > 0) {
+                mistralApiKey = data[0].mistral_api_key;
+                replicateApiKey = data[0].replicate_api_key || '';
+                return true;
+            }
             return false;
         } catch (e) { console.error('Ошибка загрузки API-ключа:', e); return false; }
     }
@@ -916,7 +910,7 @@
     }
 
     function logout() {
-        currentUser = null; mistralApiKey = '';
+        currentUser = null; mistralApiKey = ''; replicateApiKey = '';
         localStorage.removeItem('diamond_user');
         document.getElementById('mainUI').style.display = 'none';
         document.getElementById('choiceScreen').style.display = 'flex';
@@ -942,7 +936,7 @@
         };
     }
 
-    // ===== ГЕНХАБ =====
+    // ===== ГЕНХАБ (REPLICATE) =====
     function renderGenhabHistory() {
         const list = document.getElementById('genhabHistoryList');
         list.innerHTML = genhabHistory.length ? genhabHistory.map((item, i) => `
@@ -972,16 +966,62 @@
         const btn = document.getElementById('genhabGenerateBtn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+
         try {
-            const seed = Math.floor(Math.random() * 100000);
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true`;
-            genhabHistory.unshift({ prompt, imageUrl });
-            renderGenhabHistory();
-            document.getElementById('genhabResult').innerHTML = `<img src="${imageUrl}" alt="${prompt}" onerror="this.onerror=null; this.parentElement.innerHTML='<p>Ошибка загрузки</p>'">`;
-            document.getElementById('genhabDownload').style.display = 'flex';
-            document.getElementById('genhabDownloadBtn').onclick = () => downloadImage(imageUrl);
-        } catch (e) { showToast('Ошибка', 'Не удалось сгенерировать', 'error'); }
-        finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Сгенерировать'; }
+            if (replicateApiKey) {
+                // Создаём предсказание
+                const resp = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${replicateApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        input: {
+                            prompt: prompt,
+                            resolution: "1 MP",
+                            aspect_ratio: "1:1",
+                            output_format: "webp",
+                            output_quality: 80,
+                            safety_tolerance: 2
+                        }
+                    })
+                });
+                if (!resp.ok) throw new Error('Ошибка Replicate');
+                const prediction = await resp.json();
+                const predictionId = prediction.id;
+
+                // Ожидание результата
+                let imageUrl = '';
+                for (let i = 0; i < 30; i++) {
+                    const statusResp = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+                        headers: { 'Authorization': `Bearer ${replicateApiKey}` }
+                    });
+                    const statusData = await statusResp.json();
+                    if (statusData.status === 'succeeded') {
+                        imageUrl = statusData.output[0];
+                        break;
+                    } else if (statusData.status === 'failed') {
+                        throw new Error('Генерация не удалась');
+                    }
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                if (!imageUrl) throw new Error('Превышено время ожидания');
+
+                genhabHistory.unshift({ prompt, imageUrl });
+                renderGenhabHistory();
+                document.getElementById('genhabResult').innerHTML = `<img src="${imageUrl}" alt="${prompt}">`;
+                document.getElementById('genhabDownload').style.display = 'flex';
+                document.getElementById('genhabDownloadBtn').onclick = () => downloadImage(imageUrl);
+            } else {
+                throw new Error('API-ключ Replicate не найден');
+            }
+        } catch (e) {
+            showToast('Ошибка', e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Сгенерировать';
+        }
     }
 
     function switchToGenhabView() {
